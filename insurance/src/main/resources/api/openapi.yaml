@@ -1,0 +1,191 @@
+openapi: 3.0.3
+info:
+  title: Dummy Insurance Service
+  version: 1.0.0
+  description: A dummy API for an insurance company to manage customers, policies, and claims.
+servers:
+  - url: http://localhost:8080/
+    description: Local Development Server
+paths:
+  /customers:
+    get:
+      tags:
+        - Customers
+      summary: "Retrieves all customers."
+      description: "Gets a list of all customers, or finds customers by name if the 'name' query parameter is provided."
+      operationId: "getAllCustomers"
+      parameters:
+        - name: name
+          in: query
+          description: "Name to search for in first name or last name."
+          required: false
+          schema:
+            type: string
+      responses:
+        '200':
+          description: "Successfully retrieved customers"
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/CustomerDto'
+    post:
+      tags:
+        - Customers
+      summary: "Create a new customer"
+      description: "Creates a new customer record in the system."
+      operationId: "createCustomer"
+      requestBody:
+        description: "The customer object to be created."
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CustomerDto'
+      responses:
+        '201':
+          description: "Customer created successfully"
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/CustomerDto'
+        '400':
+          description: "Invalid input provided"
+
+  /customers/{id}:
+    get:
+      tags:
+        - Customers
+      summary: "Find customer by ID"
+      description: "Returns a single customer based on the ID provided."
+      operationId: "getCustomerById"
+      parameters:
+        - name: id
+          in: path
+          description: "ID of the customer to retrieve"
+          required: true
+          schema:
+            type: integer
+            format: int64
+      responses:
+        '200':
+          description: "Successful operation"
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/CustomerDto'
+        '404':
+          description: "Customer not found"
+    put:
+      tags:
+        - Customers
+      summary: "Update an existing customer"
+      description: "Updates the information of an existing customer by their ID."
+      operationId: "updateCustomer"
+      parameters:
+        - name: id
+          in: path
+          description: "ID of the customer to update"
+          required: true
+          schema:
+            type: integer
+            format: int64
+      requestBody:
+        description: "The updated customer object."
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CustomerDto'
+      responses:
+        '200':
+          description: "Customer updated successfully"
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/CustomerDto'
+        '404':
+          description: "Customer not found"
+    delete:
+      tags:
+        - Customers
+      summary: "Delete a customer"
+      description: "Deletes a customer by their ID."
+      operationId: "deleteCustomer"
+      parameters:
+        - name: id
+          in: path
+          description: "ID of the customer to delete"
+          required: true
+          schema:
+            type: integer
+            format: int64
+      responses:
+        '204':
+          description: "Customer deleted successfully"
+        '404':
+          description: "Customer not found"
+
+
+
+components:
+  schemas:
+    AddressDto:
+      type: object
+      description: "Data Transfer Object for Address information."
+      properties:
+        streetAndHouseNumber:
+          type: string
+          example: "Musterstraße 34"
+        postalCode:
+          type: string
+          example: "12345"
+        city:
+          type: string
+          example: "Musterstadt"
+        country:
+          type: string
+          example: "Deutschland"
+      required:
+        - streetAndHouseNumber
+        - postalCode
+        - city
+        - country
+
+    CustomerDto:
+      type: object
+      description: "Data Transfer Object for Customer information."
+      properties:
+        id:
+          type: integer
+          format: int64
+          readOnly: true
+        firstName:
+          type: string
+          example: "John"
+        lastName:
+          type: string
+          example: "Doe"
+        dateOfBirth:
+          type: string
+          format: date
+          example: "1980-01-01"
+        address:
+          $ref: '#/components/schemas/AddressDto'
+        password:
+          type: string
+          format: password
+          writeOnly: true
+          example: "myPassword"
+        email:
+          type: string
+          format: email
+          example: "john.doe@example.com"
+      required:
+        - firstName
+        - lastName
+        - dateOfBirth
+        - address
+        - password
+        - email

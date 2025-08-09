@@ -1,0 +1,36 @@
+# Schema for the Customer DTO
+type: object
+description: "Data Transfer Object for Customer information."
+properties:
+  id:
+    type: integer
+    format: int64
+    readOnly: true
+  firstName:
+    type: string
+    example: "John"
+  lastName:
+    type: string
+    example: "Doe"
+  dateOfBirth:
+    type: string
+    format: date
+    example: "1990-10-25"
+  address:
+    $ref: './AddressDto.yaml'
+  password:
+    type: string
+    format: password
+    writeOnly: true
+    example: "mysecretpassword"
+  email:
+    type: string
+    format: email
+    example: "john.doe@exmaple.com"
+required:
+  - firstName
+  - lastName
+  - dateOfBirth
+  - address
+  - password
+  - email

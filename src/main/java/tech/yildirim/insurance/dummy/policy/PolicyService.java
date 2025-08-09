@@ -2,8 +2,8 @@ package tech.yildirim.insurance.dummy.policy;
 
 import java.util.List;
 import java.util.Optional;
-import org.springframework.stereotype.Service;
 import tech.yildirim.insurance.api.generated.model.PolicyDto;
+import tech.yildirim.insurance.dummy.common.ResourceNotFoundException;
 
 /** Service Interface for managing {@link Policy}. */
 public interface PolicyService {
@@ -39,4 +39,13 @@ public interface PolicyService {
    * @return The updated policy DTO, or empty if the policy was not found.
    */
   Optional<PolicyDto> updatePolicy(Long id, PolicyDto policyDto);
+
+  /**
+   * Finds all policies for a given customer.
+   *
+   * @param customerId The ID of the customer.
+   * @return A list of policy DTOs.
+   * @throws ResourceNotFoundException if the customer does not exist.
+   */
+  List<PolicyDto> findPoliciesByCustomerId(Long customerId);
 }

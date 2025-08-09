@@ -7,6 +7,8 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.RestController;
 import tech.yildirim.insurance.api.generated.controller.CustomersApi;
 import tech.yildirim.insurance.api.generated.model.CustomerDto;
+import tech.yildirim.insurance.api.generated.model.PolicyDto;
+import tech.yildirim.insurance.dummy.policy.PolicyService;
 
 /**
  * REST Controller for managing customers. This class implements the generated {@link CustomersApi}
@@ -17,6 +19,7 @@ import tech.yildirim.insurance.api.generated.model.CustomerDto;
 public class CustomerController implements CustomersApi {
 
   private final CustomerService customerService;
+  private final PolicyService policyService;
 
   @Override
   public ResponseEntity<CustomerDto> createCustomer(CustomerDto customerDto) {
@@ -59,5 +62,10 @@ public class CustomerController implements CustomersApi {
         .updateCustomer(id, customerDto)
         .map(ResponseEntity::ok)
         .orElse(new ResponseEntity<>(HttpStatus.NOT_FOUND));
+  }
+
+  @Override
+  public ResponseEntity<List<PolicyDto>> getPoliciesByCustomerId(Long id) {
+    return ResponseEntity.ok(policyService.findPoliciesByCustomerId(id));
   }
 }

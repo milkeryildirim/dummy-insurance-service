@@ -12,6 +12,7 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import java.time.LocalDate;
+import java.util.List;
 import java.util.Optional;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
@@ -24,6 +25,9 @@ import org.springframework.http.MediaType;
 import org.springframework.test.web.servlet.MockMvc;
 import tech.yildirim.insurance.api.generated.model.AddressDto;
 import tech.yildirim.insurance.api.generated.model.CustomerDto;
+import tech.yildirim.insurance.api.generated.model.PolicyDto;
+import tech.yildirim.insurance.dummy.common.ResourceNotFoundException;
+import tech.yildirim.insurance.dummy.policy.PolicyService;
 
 @WebMvcTest(CustomerController.class)
 @DisplayName("Customer Controller Web Layer Tests")
@@ -32,6 +36,8 @@ class CustomerControllerTest {
   @Autowired private MockMvc mockMvc;
 
   @Autowired private CustomerService customerService;
+
+  @Autowired private PolicyService policyService;
 
   @Autowired private ObjectMapper objectMapper;
 
@@ -45,6 +51,11 @@ class CustomerControllerTest {
     public CustomerService customerService() {
       // We manually create the mock object here.
       return Mockito.mock(CustomerService.class);
+    }
+
+    @Bean
+    public PolicyService policyService() {
+      return Mockito.mock(PolicyService.class);
     }
   }
 
@@ -137,5 +148,33 @@ class CustomerControllerTest {
 
     // When & Then: Perform DELETE request and assert the response
     mockMvc.perform(delete("/customers/{id}", customerId)).andExpect(status().isNotFound());
+  }
+
+  @Test
+  @DisplayName("GET /customers/{id}/policies - Should return policies for an existing customer")
+  void getPoliciesByCustomerId_whenCustomerExists_shouldReturnPolicies() throws Exception {
+    // Given: The policy service will return a list of policies
+    long customerId = 1L;
+    List<PolicyDto> policies = List.of(new PolicyDto().id(101L));
+    when(policyService.findPoliciesByCustomerId(customerId)).thenReturn(policies);
+
+    // When & Then
+    mockMvc.perform(get("/customers/{id}/policies", customerId))
+        .andExpect(status().isOk())
+        .andExpect(jsonPath("$.size()", is(1)))
+        .andExpect(jsonPath("$[0].id", is(101)));
+  }
+
+  @Test
+  @DisplayName("GET /customers/{id}/policies - Should return 404 Not Found when customer does not exist")
+  void getPoliciesByCustomerId_whenCustomerNotExists_shouldReturnNotFound() throws Exception {
+    // Given: The policy service will throw an exception
+    long nonExistentCustomerId = 99L;
+    when(policyService.findPoliciesByCustomerId(nonExistentCustomerId))
+        .thenThrow(new ResourceNotFoundException("Customer not found"));
+
+    // When & Then
+    mockMvc.perform(get("/customers/{id}/policies", nonExistentCustomerId))
+        .andExpect(status().isNotFound());
   }
 }

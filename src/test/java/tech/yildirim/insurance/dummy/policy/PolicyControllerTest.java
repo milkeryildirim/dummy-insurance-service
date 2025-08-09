@@ -4,6 +4,7 @@ import static org.hamcrest.CoreMatchers.is;
 import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyLong;
+import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.when;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
@@ -13,6 +14,7 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 import com.fasterxml.jackson.databind.ObjectMapper;
 import java.math.BigDecimal;
 import java.time.LocalDate;
+import java.util.List;
 import java.util.Optional;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
@@ -23,7 +25,9 @@ import org.springframework.boot.test.context.TestConfiguration;
 import org.springframework.context.annotation.Bean;
 import org.springframework.http.MediaType;
 import org.springframework.test.web.servlet.MockMvc;
+import tech.yildirim.insurance.api.generated.model.ClaimDto;
 import tech.yildirim.insurance.api.generated.model.PolicyDto;
+import tech.yildirim.insurance.dummy.claim.ClaimService;
 import tech.yildirim.insurance.dummy.common.ResourceNotFoundException;
 
 @WebMvcTest(PolicyController.class)
@@ -34,6 +38,8 @@ class PolicyControllerTest {
 
   @Autowired private PolicyService policyService;
 
+  @Autowired ClaimService claimService;
+
   @Autowired private ObjectMapper objectMapper;
 
   @TestConfiguration
@@ -41,6 +47,11 @@ class PolicyControllerTest {
     @Bean
     public PolicyService policyService() {
       return Mockito.mock(PolicyService.class);
+    }
+
+    @Bean
+    public ClaimService claimService() {
+      return Mockito.mock(ClaimService.class);
     }
   }
 
@@ -106,13 +117,14 @@ class PolicyControllerTest {
   @DisplayName("POST /policies - Should return 404 Not Found when customer does not exist")
   void createPolicy_forNonExistentCustomer_shouldReturnNotFound() throws Exception {
     // Given: The service will throw an exception because the customer is not found
-    PolicyDto inputDto = new PolicyDto()
-        .customerId(1L)
-        .startDate(LocalDate.now())
-        .endDate(LocalDate.now().plusYears(1))
-        .premium(new BigDecimal("100.00"))
-        .type(PolicyDto.TypeEnum.HEALTH)
-        .customerId(99L);
+    PolicyDto inputDto =
+        new PolicyDto()
+            .customerId(1L)
+            .startDate(LocalDate.now())
+            .endDate(LocalDate.now().plusYears(1))
+            .premium(new BigDecimal("100.00"))
+            .type(PolicyDto.TypeEnum.HEALTH)
+            .customerId(99L);
     when(policyService.createPolicy(any(PolicyDto.class)))
         .thenThrow(new ResourceNotFoundException("Customer not found with id: 99"));
 
@@ -123,5 +135,70 @@ class PolicyControllerTest {
                 .contentType(MediaType.APPLICATION_JSON)
                 .content(objectMapper.writeValueAsString(inputDto)))
         .andExpect(status().isNotFound());
+  }
+
+  @Test
+  @DisplayName("GET /policies/{id}/claims - Should return claims list for a policy")
+  void getClaimsByPolicyId_shouldReturnClaims() throws Exception {
+    // Given
+    long policyId = 1L;
+    List<ClaimDto> claims = List.of(new ClaimDto().id(101L), new ClaimDto().id(102L));
+    when(claimService.findClaimsByPolicyId(policyId)).thenReturn(claims);
+
+    // When & Then
+    mockMvc
+        .perform(get("/policies/{id}/claims", policyId))
+        .andExpect(status().isOk())
+        .andExpect(jsonPath("$.size()", is(2)))
+        .andExpect(jsonPath("$[0].id", is(101)));
+  }
+
+  @Test
+  @DisplayName("POST /policies/{id}/claims - Should return 201 Created for a valid submission")
+  void submitClaim_withValidData_shouldReturnCreated() throws Exception {
+    // Given
+    long policyId = 1L;
+
+    ClaimDto inputDto =
+        new ClaimDto().policyId(policyId).description("Test claim").dateOfIncident(LocalDate.now());
+
+    ClaimDto outputDto =
+        new ClaimDto().id(101L).policyId(policyId).status(ClaimDto.StatusEnum.SUBMITTED);
+
+    when(claimService.submitClaim(eq(policyId), any(ClaimDto.class))).thenReturn(outputDto);
+
+    // When & Then
+    mockMvc
+        .perform(
+            post("/policies/{id}/claims", policyId)
+                .contentType(MediaType.APPLICATION_JSON)
+                .content(objectMapper.writeValueAsString(inputDto)))
+        .andExpect(status().isCreated())
+        .andExpect(jsonPath("$.id", is(101)))
+        .andExpect(jsonPath("$.status", is("SUBMITTED")));
+  }
+
+  @Test
+  @DisplayName(
+      "POST /policies/{id}/claims - Should return 404 Not Found when policy does not exist")
+  void submitClaim_forNonExistentPolicy_shouldReturnNotFound() throws Exception {
+    // Given: A VALID DTO is created to pass the validation layer
+    long nonExistentPolicyId = 99L;
+    ClaimDto inputDto =
+        new ClaimDto()
+            .policyId(nonExistentPolicyId) // <-- Bu alan eklendi
+            .description("Test claim for non-existent policy")
+            .dateOfIncident(LocalDate.now()); // <-- Bu alan eklendi
+
+    when(claimService.submitClaim(eq(nonExistentPolicyId), any(ClaimDto.class)))
+        .thenThrow(new ResourceNotFoundException("Policy not found"));
+
+    // When & Then
+    mockMvc
+        .perform(
+            post("/policies/{id}/claims", nonExistentPolicyId)
+                .contentType(MediaType.APPLICATION_JSON)
+                .content(objectMapper.writeValueAsString(inputDto)))
+        .andExpect(status().isNotFound()); // Now it should correctly be 404
   }
 }

@@ -3,11 +3,13 @@ package tech.yildirim.insurance.dummy.policy;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.anyLong;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
 import java.math.BigDecimal;
+import java.util.List;
 import java.util.Optional;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
@@ -54,7 +56,6 @@ class PolicyServiceImplTest {
     PolicyDto finalDto = new PolicyDto();
     finalDto.setId(101L);
     finalDto.setPolicyNumber("POL-generated-123");
-
 
     when(customerRepository.findById(customerId)).thenReturn(Optional.of(existingCustomer));
     when(policyMapper.toEntity(inputDto)).thenReturn(policyToSave);
@@ -118,8 +119,7 @@ class PolicyServiceImplTest {
     finalDto.setStatus(PolicyDto.StatusEnum.ACTIVE);
 
     when(policyRepository.findById(policyId)).thenReturn(Optional.of(existingPolicy));
-    when(policyRepository.save(any(Policy.class)))
-        .thenReturn(existingPolicy);
+    when(policyRepository.save(any(Policy.class))).thenReturn(existingPolicy);
     when(policyMapper.toDto(existingPolicy)).thenReturn(finalDto);
 
     // When: The update method is called
@@ -132,5 +132,48 @@ class PolicyServiceImplTest {
     // And: Verify the correct methods were called
     verify(policyMapper).updatePolicyFromDto(updateDto, existingPolicy);
     verify(policyRepository).save(existingPolicy);
+  }
+
+  @Test
+  @DisplayName("Should return policies when customer exists")
+  void findPoliciesByCustomerId_whenCustomerExists_shouldReturnPolicies() {
+    // Given: An existing customer and their policies
+    long customerId = 1L;
+    Policy policy1 = new Policy();
+    policy1.setId(101L);
+    List<Policy> policies = List.of(policy1);
+    PolicyDto dto1 = new PolicyDto();
+    dto1.setId(101L);
+    List<PolicyDto> dtoList = List.of(dto1);
+
+    // --- Mocking ---
+    when(customerRepository.existsById(customerId)).thenReturn(true);
+    when(policyRepository.findByCustomerId(customerId)).thenReturn(policies);
+    when(policyMapper.toDtoList(policies)).thenReturn(dtoList);
+
+    // When: The service method is called
+    List<PolicyDto> result = policyService.findPoliciesByCustomerId(customerId);
+
+    // Then: The list of DTOs should be returned
+    assertThat(result).hasSize(1);
+    assertThat(result.getFirst().getId()).isEqualTo(101L);
+  }
+
+  @Test
+  @DisplayName("Should throw ResourceNotFoundException when customer does not exist")
+  void findPoliciesByCustomerId_whenCustomerDoesNotExist_shouldThrowException() {
+    // Given: A non-existent customer ID
+    long nonExistentCustomerId = 99L;
+    when(customerRepository.existsById(nonExistentCustomerId)).thenReturn(false);
+
+    // When & Then: Assert that an exception is thrown
+    assertThrows(
+        ResourceNotFoundException.class,
+        () -> {
+          policyService.findPoliciesByCustomerId(nonExistentCustomerId);
+        });
+
+    // And: Verify that the policy repository was never queried
+    verify(policyRepository, never()).findByCustomerId(anyLong());
   }
 }

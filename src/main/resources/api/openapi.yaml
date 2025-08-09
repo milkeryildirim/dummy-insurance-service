@@ -13,10 +13,16 @@ paths:
     $ref: './paths/customers_collection.yaml'
   /customers/{id}:
     $ref: './paths/customers_item.yaml'
+  /customers/{id}/policies:
+    $ref: './paths/customer_policies_collection.yaml'
   /policies:
     $ref: './paths/policies_collection.yaml'
   /policies/{id}:
     $ref: './paths/policies_item.yaml'
+  /policies/{id}/claims:
+    $ref: './paths/policies_claims_collection.yaml'
+  /claims/{id}:
+    $ref: './paths/claims_item.yaml'
 
 # Components and schemas remain the same.
 components:
@@ -27,6 +33,8 @@ components:
       $ref: './components/schemas/AddressDto.yaml'
     PolicyDto:
       $ref: './components/schemas/PolicyDto.yaml'
+    ClaimDto:
+      $ref: './components/schemas/ClaimDto.yaml'
   parameters:
     CustomerId:
       name: id
@@ -40,6 +48,14 @@ components:
       name: id
       in: path
       description: "The unique identifier of the policy"
+      required: true
+      schema:
+        type: integer
+        format: int64
+    ClaimId:
+      name: id
+      in: path
+      description: "The unique identifier of the claim"
       required: true
       schema:
         type: integer

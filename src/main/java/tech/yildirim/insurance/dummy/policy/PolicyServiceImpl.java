@@ -64,9 +64,19 @@ public class PolicyServiceImpl implements PolicyService {
             });
   }
 
+  @Override
+  public List<PolicyDto> findPoliciesByCustomerId(Long customerId) {
+    if (!customerRepository.existsById(customerId)) {
+      throw new ResourceNotFoundException("Customer not found with id: " + customerId);
+    }
+
+    return policyMapper.toDtoList(policyRepository.findByCustomerId(customerId));
+  }
+
   /**
-   * Generates a simple unique policy number.
-   * In a real-world scenario, this could be a more complex sequential number generator.
+   * Generates a simple unique policy number. In a real-world scenario, this could be a more complex
+   * sequential number generator.
+   *
    * @return A unique policy number string.
    */
   private String generatePolicyNumber() {

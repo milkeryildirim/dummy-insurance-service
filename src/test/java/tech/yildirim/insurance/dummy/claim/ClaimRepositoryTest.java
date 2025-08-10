@@ -1,7 +1,6 @@
 package tech.yildirim.insurance.dummy.claim;
 
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.junit.jupiter.api.Assertions.*;
 
 import java.math.BigDecimal;
 import java.time.LocalDate;
@@ -13,7 +12,7 @@ import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.orm.jpa.DataJpaTest;
 import org.springframework.boot.test.autoconfigure.orm.jpa.TestEntityManager;
-import tech.yildirim.insurance.dummy.customer.Address;
+import tech.yildirim.insurance.dummy.common.Address;
 import tech.yildirim.insurance.dummy.customer.Customer;
 import tech.yildirim.insurance.dummy.policy.Policy;
 import tech.yildirim.insurance.dummy.policy.PolicyStatus;
@@ -61,6 +60,7 @@ class ClaimRepositoryTest {
             BigDecimal.ZERO,
             customer,
             null,
+            null,
             null);
     homePolicy =
         new Policy(
@@ -72,6 +72,7 @@ class ClaimRepositoryTest {
             PolicyStatus.ACTIVE,
             BigDecimal.ZERO,
             customer,
+            null,
             null,
             null);
     testEntityManager.persist(autoPolicy);

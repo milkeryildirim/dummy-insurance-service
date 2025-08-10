@@ -19,6 +19,7 @@ import lombok.Data;
 import lombok.NoArgsConstructor;
 import org.hibernate.annotations.CreationTimestamp;
 import org.hibernate.annotations.UpdateTimestamp;
+import tech.yildirim.insurance.dummy.agency.Agency;
 import tech.yildirim.insurance.dummy.customer.Customer;
 
 /** Represents an insurance policy in the system. Each policy is linked to a single customer. */
@@ -56,6 +57,10 @@ public class Policy {
   @ManyToOne(fetch = FetchType.LAZY)
   @JoinColumn(name = "customer_id", nullable = false)
   private Customer customer;
+
+  @ManyToOne(fetch = FetchType.LAZY)
+  @JoinColumn(name = "agency_id")
+  private Agency agency;
 
   @CreationTimestamp
   @Column(nullable = false, updatable = false)

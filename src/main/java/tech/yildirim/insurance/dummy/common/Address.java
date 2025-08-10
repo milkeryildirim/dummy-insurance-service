@@ -1,4 +1,4 @@
-package tech.yildirim.insurance.dummy.customer;
+package tech.yildirim.insurance.dummy.common;
 
 import jakarta.persistence.Embeddable;
 import lombok.AllArgsConstructor;

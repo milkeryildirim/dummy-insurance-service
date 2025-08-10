@@ -12,6 +12,9 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import tech.yildirim.insurance.api.generated.model.ClaimDto;
 import tech.yildirim.insurance.dummy.common.ResourceNotFoundException;
+import tech.yildirim.insurance.dummy.employee.Employee;
+import tech.yildirim.insurance.dummy.employee.EmployeeRepository;
+import tech.yildirim.insurance.dummy.employee.EmployeeRole;
 import tech.yildirim.insurance.dummy.policy.Policy;
 import tech.yildirim.insurance.dummy.policy.PolicyRepository;
 import tech.yildirim.insurance.dummy.policy.PolicyStatus;
@@ -25,6 +28,7 @@ public class ClaimServiceImpl implements ClaimService {
   private final ClaimRepository claimRepository;
   private final PolicyRepository policyRepository;
   private final ClaimMapper claimMapper;
+  private final EmployeeRepository employeeRepository;
 
   @Override
   @Transactional
@@ -65,6 +69,34 @@ public class ClaimServiceImpl implements ClaimService {
       throw new ResourceNotFoundException("Policy not found with id: " + policyId);
     }
     return claimMapper.toDtoList(claimRepository.findByPolicyId(policyId));
+  }
+
+  @Override
+  @Transactional
+  public ClaimDto assignAdjuster(Long claimId, Long employeeId) {
+    Claim claim =
+        claimRepository
+            .findById(claimId)
+            .orElseThrow(
+                () -> new ResourceNotFoundException("Claim not found with id: " + claimId));
+
+    Employee employee =
+        employeeRepository
+            .findById(employeeId)
+            .orElseThrow(
+                () -> new ResourceNotFoundException("Employee not found with id: " + employeeId));
+
+    if (employee.getRole() != EmployeeRole.CLAIMS_ADJUSTER) {
+      throw new IllegalArgumentException(
+          "Employee with id " + employeeId + " is not a CLAIMS_ADJUSTER");
+    }
+
+    claim.setAssignedAdjuster(employee);
+    if (claim.getStatus() == ClaimStatus.SUBMITTED) {
+      claim.setStatus(ClaimStatus.IN_REVIEW);
+    }
+
+    return claimMapper.toDto(claimRepository.save(claim));
   }
 
   /**

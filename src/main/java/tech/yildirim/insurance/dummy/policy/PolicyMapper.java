@@ -21,6 +21,7 @@ public interface PolicyMapper {
    * @return The target DTO.
    */
   @Mapping(source = "customer.id", target = "customerId")
+  @Mapping(source = "agency.id", target = "agencyId")
   PolicyDto toDto(Policy policy);
 
   /**
@@ -33,6 +34,7 @@ public interface PolicyMapper {
   @Mapping(target = "id", ignore = true)
   @Mapping(target = "policyNumber", ignore = true)
   @Mapping(target = "customer", ignore = true)
+  @Mapping(target = "agency", ignore = true)
   @Mapping(target = "createdAt", ignore = true)
   @Mapping(target = "updatedAt", ignore = true)
   Policy toEntity(PolicyDto policyDto);

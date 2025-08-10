@@ -20,6 +20,7 @@ public interface ClaimMapper {
    * @return The target DTO.
    */
   @Mapping(source = "policy.id", target = "policyId")
+  @Mapping(source = "assignedAdjuster.phoneNumber", target = "assignedAdjusterContact")
   ClaimDto toDto(Claim claim);
 
   /**
@@ -28,6 +29,7 @@ public interface ClaimMapper {
    * @return The target DTO, populated with common and auto-specific fields.
    */
   @Mapping(source = "policy.id", target = "policyId")
+  @Mapping(source = "assignedAdjuster.phoneNumber", target = "assignedAdjusterContact")
   ClaimDto toDto(AutoClaim autoClaim);
 
   /**
@@ -36,6 +38,7 @@ public interface ClaimMapper {
    * @return The target DTO, populated with common and home-specific fields.
    */
   @Mapping(source = "policy.id", target = "policyId")
+  @Mapping(source = "assignedAdjuster.phoneNumber", target = "assignedAdjusterContact")
   ClaimDto toDto(HomeClaim homeClaim);
 
   /**
@@ -44,6 +47,7 @@ public interface ClaimMapper {
    * @return The target DTO, populated with common and health-specific fields.
    */
   @Mapping(source = "policy.id", target = "policyId")
+  @Mapping(source = "assignedAdjuster.phoneNumber", target = "assignedAdjusterContact")
   ClaimDto toDto(HealthClaim healthClaim);
 
   /**

@@ -37,7 +37,8 @@ class PolicyMapperTest {
             PolicyType.AUTO,
             PolicyStatus.ACTIVE,
             new BigDecimal("1200.50"),
-            testCustomer, // The associated customer object
+            testCustomer,
+            null,
             null,
             null);
 

@@ -1,0 +1,25 @@
+post:
+  tags:
+    - Claims
+  summary: "Assign an adjuster to a claim"
+  description: "Assigns an employee (who must have the CLAIMS_ADJUSTER role) to a specific claim"
+  operationId: "assignAdjusterToClaim"
+  parameters:
+    - $ref: '../openapi.yaml#/components/parameters/ClaimId'
+  requestBody:
+    required: true
+    content:
+      application/json:
+        schema:
+          $ref: '../components/schemas/AssignAdjusterRequestDto.yaml'
+  responses:
+    '200':
+      description: "Adjuster assigned successfully. Returns the updated claim."
+      content:
+        application/json:
+          schema:
+            $ref: '../components/schemas/ClaimDto.yaml'
+    '404':
+      description: "Claim or Employee not found."
+    '400':
+      description: "Bad Request. For example, the employee is not a CLAIMS_ADJUSTER."

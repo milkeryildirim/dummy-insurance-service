@@ -31,4 +31,13 @@ public interface ClaimService {
    * @return A list of claim DTOs for that policy.
    */
   List<ClaimDto> findClaimsByPolicyId(Long policyId);
+
+  /**
+   * Assigns an employee to a specific claim.
+   *
+   * @param claimId The ID of the claim.
+   * @param employeeId The ID of the employee to be assigned.
+   * @return The updated claim DTO with the assignee information.
+   */
+  ClaimDto assignAdjuster(Long claimId, Long employeeId);
 }

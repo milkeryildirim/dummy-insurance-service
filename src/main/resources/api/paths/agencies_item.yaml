@@ -1,0 +1,16 @@
+get:
+  tags:
+    - Agencies
+  summary: "Find agency by ID"
+  operationId: "getAgencyById"
+  parameters:
+    - $ref: '../openapi.yaml#/components/parameters/AgencyId'
+  responses:
+    '200':
+      description: "Successful operation"
+      content:
+        application/json:
+          schema:
+            $ref: '../components/schemas/AgencyDto.yaml'
+    '404':
+      description: "Agency not found"

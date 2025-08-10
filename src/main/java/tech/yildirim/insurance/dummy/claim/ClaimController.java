@@ -4,6 +4,7 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.RestController;
 import tech.yildirim.insurance.api.generated.controller.ClaimsApi;
+import tech.yildirim.insurance.api.generated.model.AssignAdjusterRequestDto;
 import tech.yildirim.insurance.api.generated.model.ClaimDto;
 
 /**
@@ -22,5 +23,12 @@ public class ClaimController implements ClaimsApi {
         .findClaimById(id)
         .map(ResponseEntity::ok)
         .orElse(ResponseEntity.notFound().build());
+  }
+
+  @Override
+  public ResponseEntity<ClaimDto> assignAdjusterToClaim(
+      Long id, AssignAdjusterRequestDto assignAdjusterRequestDto) {
+    return ResponseEntity.ok(
+        claimService.assignAdjuster(id, assignAdjusterRequestDto.getEmployeeId()));
   }
 }

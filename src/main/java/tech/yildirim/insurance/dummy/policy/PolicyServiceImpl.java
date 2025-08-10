@@ -7,6 +7,8 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import tech.yildirim.insurance.api.generated.model.PolicyDto;
+import tech.yildirim.insurance.dummy.agency.Agency;
+import tech.yildirim.insurance.dummy.agency.AgencyRepository;
 import tech.yildirim.insurance.dummy.common.ResourceNotFoundException;
 import tech.yildirim.insurance.dummy.customer.Customer;
 import tech.yildirim.insurance.dummy.customer.CustomerRepository;
@@ -19,6 +21,7 @@ public class PolicyServiceImpl implements PolicyService {
   private final PolicyRepository policyRepository;
   private final CustomerRepository customerRepository;
   private final PolicyMapper policyMapper;
+  private final AgencyRepository agencyRepository;
 
   @Override
   @Transactional
@@ -34,6 +37,17 @@ public class PolicyServiceImpl implements PolicyService {
     policy.setCustomer(customer);
     policy.setPolicyNumber(generatePolicyNumber());
     policy.setStatus(PolicyStatus.PENDING);
+
+    if (policyDto.getAgencyId() != null) {
+      Agency agency =
+          agencyRepository
+              .findById(policyDto.getAgencyId())
+              .orElseThrow(
+                  () ->
+                      new ResourceNotFoundException(
+                          "Agency not found with id: " + policyDto.getAgencyId()));
+      policy.setAgency(agency);
+    }
 
     Policy savedPolicy = policyRepository.save(policy);
     return policyMapper.toDto(savedPolicy);
@@ -59,6 +73,18 @@ public class PolicyServiceImpl implements PolicyService {
         .map(
             existingPolicy -> {
               policyMapper.updatePolicyFromDto(policyDto, existingPolicy);
+              if (policyDto.getAgencyId() != null) {
+                Agency agency =
+                    agencyRepository
+                        .findById(policyDto.getAgencyId())
+                        .orElseThrow(
+                            () ->
+                                new ResourceNotFoundException(
+                                    "Agency not found with id: " + policyDto.getAgencyId()));
+                existingPolicy.setAgency(agency);
+              } else {
+                existingPolicy.setAgency(null);
+              }
               policyRepository.save(existingPolicy);
               return policyMapper.toDto(existingPolicy);
             });

@@ -8,6 +8,7 @@ import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import tech.yildirim.insurance.api.generated.model.AddressDto;
 import tech.yildirim.insurance.api.generated.model.CustomerDto;
+import tech.yildirim.insurance.dummy.common.Address;
 
 @DisplayName("Customer Mapper Unit Tests")
 class CustomerMapperTest {

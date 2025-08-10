@@ -20,6 +20,7 @@ import java.time.LocalDate;
 import java.time.ZonedDateTime;
 import lombok.Data;
 import org.hibernate.annotations.CreationTimestamp;
+import tech.yildirim.insurance.dummy.employee.Employee;
 import tech.yildirim.insurance.dummy.policy.Policy;
 
 @Entity
@@ -55,6 +56,10 @@ public abstract class Claim {
   @ManyToOne(fetch = FetchType.LAZY)
   @JoinColumn(name = "policy_id", nullable = false)
   private Policy policy;
+
+  @ManyToOne(fetch = FetchType.LAZY)
+  @JoinColumn(name = "assigned_adjuster_id")
+  private Employee assignedAdjuster;
 
   @CreationTimestamp
   @Column(nullable = false, updatable = false)

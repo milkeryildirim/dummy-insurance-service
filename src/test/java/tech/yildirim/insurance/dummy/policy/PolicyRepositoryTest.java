@@ -1,7 +1,6 @@
 package tech.yildirim.insurance.dummy.policy;
 
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.junit.jupiter.api.Assertions.*;
 
 import java.math.BigDecimal;
 import java.time.LocalDate;
@@ -12,7 +11,7 @@ import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.orm.jpa.DataJpaTest;
 import org.springframework.boot.test.autoconfigure.orm.jpa.TestEntityManager;
-import tech.yildirim.insurance.dummy.customer.Address;
+import tech.yildirim.insurance.dummy.common.Address;
 import tech.yildirim.insurance.dummy.customer.Customer;
 
 @DataJpaTest
@@ -110,6 +109,7 @@ class PolicyRepositoryTest {
             BigDecimal.TEN,
             customer1,
             null,
+            null,
             null);
     Policy policy2C1 =
         new Policy(
@@ -122,6 +122,7 @@ class PolicyRepositoryTest {
             BigDecimal.TEN,
             customer1,
             null,
+            null,
             null);
     Policy policy3C2 =
         new Policy(
@@ -133,6 +134,7 @@ class PolicyRepositoryTest {
             PolicyStatus.ACTIVE,
             BigDecimal.TEN,
             customer2,
+            null,
             null,
             null);
     testEntityManager.persist(policy1C1);

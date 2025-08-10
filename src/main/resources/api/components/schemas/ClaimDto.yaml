@@ -44,6 +44,21 @@ properties:
     description: "The final amount paid out for the claim"
     readOnly: true
     example: 1000.00
+  assignedAdjusterId:
+    type: integer
+    format: int64
+    description: "ID of the employee assigned to this claim. Used for assigning an adjuster"
+    nullable: true
+  assignedAdjusterName:
+    type: string
+    readOnly: true
+    description: "Full name of the assigned employee adjuster. Read-only"
+    nullable: true
+  assignedAdjusterContact:
+    type: string
+    readOnly: true
+    description: "Contact phone number of the assigned employee adjuster. Read-only."
+    nullable: true
 
   # AutoClaim Specific Fields
   licensePlate:

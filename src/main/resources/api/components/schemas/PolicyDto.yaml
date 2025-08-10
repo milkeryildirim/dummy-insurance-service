@@ -35,7 +35,12 @@ properties:
   customerId:
     type: integer
     format: int64
-    description: "The ID of the customer who owns this policy."
+    description: "The ID of the customer who owns this policy"
+  agencyId:
+    type: integer
+    format: int64
+    description: "ID of the agency that sold this policy. Can be null if sold directly"
+    nullable: true
 required:
   - startDate
   - endDate

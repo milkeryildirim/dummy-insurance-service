@@ -3,6 +3,7 @@ package tech.yildirim.insurance.dummy.common.web;
 import java.time.ZonedDateTime;
 import java.util.HashMap;
 import java.util.Map;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
@@ -14,6 +15,7 @@ import tech.yildirim.insurance.dummy.common.ResourceNotFoundException;
 
 /** Centralized exception handling for all @RestController instances. */
 @RestControllerAdvice
+@Slf4j
 public class GlobalExceptionHandler {
 
   /**
@@ -29,6 +31,10 @@ public class GlobalExceptionHandler {
         .getFieldErrors()
         .forEach(error -> errors.put(error.getField(), error.getDefaultMessage()));
 
+    String requestPath = request.getDescription(false).replace("uri=", "");
+    log.warn(
+        "Validation failed for request path: '{}'. Details: {}", requestPath, errors);
+
     return new ResponseEntity<>(
         ErrorResponse.builder()
             .timestamp(ZonedDateTime.now())
@@ -36,7 +42,7 @@ public class GlobalExceptionHandler {
             .error(HttpStatus.BAD_REQUEST.getReasonPhrase())
             .message("Validation failed for requests.")
             .details(errors)
-            .path(request.getDescription(false).replace("uri=", ""))
+            .path(requestPath)
             .build(),
         HttpStatus.BAD_REQUEST);
   }
@@ -49,13 +55,15 @@ public class GlobalExceptionHandler {
   @ExceptionHandler(ResourceNotFoundException.class)
   public ResponseEntity<ErrorResponse> handleResourceNotFoundException(
       ResourceNotFoundException ex, WebRequest request) {
+    String requestPath = request.getDescription(false).replace("uri=", "");
+    log.warn("ResourceNotFoundException for path '{}': {}", requestPath, ex.getMessage());
     return new ResponseEntity<>(
         ErrorResponse.builder()
             .timestamp(ZonedDateTime.now())
             .status(HttpStatus.NOT_FOUND.value())
             .error(HttpStatus.NOT_FOUND.getReasonPhrase())
             .message(ex.getMessage())
-            .path(request.getDescription(false).replace("uri=", ""))
+            .path(requestPath)
             .build(),
         HttpStatus.NOT_FOUND);
   }
@@ -68,13 +76,15 @@ public class GlobalExceptionHandler {
   @ExceptionHandler(DataIntegrityViolationException.class)
   public ResponseEntity<ErrorResponse> handleDataIntegrityViolation(
       DataIntegrityViolationException ex, WebRequest request) {
+    String requestPath = request.getDescription(false).replace("uri=", "");
+    log.warn("Data integrity violation for path '{}': {}", requestPath, ex.getMessage());
     ErrorResponse errorResponse =
         ErrorResponse.builder()
             .timestamp(ZonedDateTime.now())
             .status(HttpStatus.CONFLICT.value())
             .error(HttpStatus.CONFLICT.getReasonPhrase())
             .message(ex.getMessage())
-            .path(request.getDescription(false).replace("uri=", ""))
+            .path(requestPath)
             .build();
 
     return new ResponseEntity<>(errorResponse, HttpStatus.CONFLICT);
@@ -83,13 +93,15 @@ public class GlobalExceptionHandler {
   @ExceptionHandler({IllegalArgumentException.class, IllegalStateException.class})
   public ResponseEntity<ErrorResponse> handleIllegalExceptions(
       RuntimeException ex, WebRequest request) {
+    String requestPath = request.getDescription(false).replace("uri=", "");
+    log.warn("Illegal argument/state exception for path '{}': {}", requestPath, ex.getMessage());
     ErrorResponse errorResponse =
         ErrorResponse.builder()
             .timestamp(ZonedDateTime.now())
             .status(HttpStatus.BAD_REQUEST.value())
             .error(HttpStatus.BAD_REQUEST.getReasonPhrase())
             .message(ex.getMessage())
-            .path(request.getDescription(false).replace("uri=", ""))
+            .path(requestPath)
             .build();
 
     return new ResponseEntity<>(errorResponse, HttpStatus.BAD_REQUEST);

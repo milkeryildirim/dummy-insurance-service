@@ -2,6 +2,7 @@ package tech.yildirim.insurance.dummy.employee;
 
 import java.util.List;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.RestController;
@@ -13,25 +14,41 @@ import tech.yildirim.insurance.api.generated.model.EmployeeDto;
  */
 @RestController
 @RequiredArgsConstructor
+@Slf4j
 public class EmployeeController implements EmployeesApi {
 
   private final EmployeeService employeeService;
 
   @Override
   public ResponseEntity<EmployeeDto> createEmployee(EmployeeDto employeeDto) {
-    return new ResponseEntity<>(employeeService.createEmployee(employeeDto), HttpStatus.CREATED);
+    log.info("REST request to create employee with email: {}", employeeDto.getEmail());
+    EmployeeDto createdEmployee = employeeService.createEmployee(employeeDto);
+    log.info("Successfully created employee with id {}", createdEmployee.getId());
+    return new ResponseEntity<>(createdEmployee, HttpStatus.CREATED);
   }
 
   @Override
   public ResponseEntity<List<EmployeeDto>> getAllEmployees() {
-    return ResponseEntity.ok(employeeService.findAllEmployees());
+    log.info("REST request to get all employees");
+    List<EmployeeDto> employees = employeeService.findAllEmployees();
+    log.debug("Returning {} employees", employees.size());
+    return ResponseEntity.ok(employees);
   }
 
   @Override
   public ResponseEntity<EmployeeDto> getEmployeeById(Long id) {
+    log.info("REST request to get employee by id: {}", id);
     return employeeService
         .findEmployeeById(id)
-        .map(ResponseEntity::ok)
-        .orElse(ResponseEntity.notFound().build());
+        .map(
+            employee -> {
+              log.info("Found employee with id: {}, returning HTTP 200 OK", id);
+              return ResponseEntity.ok(employee);
+            })
+        .orElseGet(
+            () -> {
+              log.warn("Employee with id: {} not found, returning HTTP 404 NOT FOUND", id);
+              return ResponseEntity.notFound().build();
+            });
   }
 }

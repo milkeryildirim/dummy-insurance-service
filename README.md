@@ -66,6 +66,9 @@ Each feature is accompanied by a full suite of tests covering all layers:
 * Apache Maven 3.8+
 
 ### How to Run the Application
+
+This is a multi-module Maven project. All commands should be run from the root directory.
+
 1.  Clone the repository:
     ```sh
     git clone git@github.com:milkeryildirim/dummy-insurance-service.git
@@ -80,13 +83,24 @@ Each feature is accompanied by a full suite of tests covering all layers:
     ```
 4.  Run the application:
     ```sh
-    mvn spring-boot:run
+    mvn spring-boot:run -pl application
     ```
-The application will start on `http://localhost:8080`.
+The application will start on `http://localhost:8080`. The `-pl application` flag specifically tells Maven to run the `application` module.
 
 ### How to Run Tests
-To run all automated tests, execute the following command in the project root:
+To run all automated tests for all modules, execute the following command from the project root:
 ```sh
 mvn test
 ```
 ---
+
+## API Documentation
+Once the application is running, the API documentation is available via Swagger UI.
+* **Swagger UI**: `http://localhost:8080/swagger-ui/index.html`
+* **OpenAPI Specification**: `http://localhost:8080/api-docs`
+
+The H2 in-memory database console is also available for debugging and data inspection.
+* **H2 Console**: `http://localhost:8080/h2-console`
+  * JDBC URL: `jdbc:h2:mem:insurancedb`
+  * Username: `sa`
+  * Password: (leave blank)

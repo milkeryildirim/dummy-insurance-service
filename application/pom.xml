@@ -74,6 +74,32 @@
     <plugins>
       <plugin>
         <groupId>org.apache.maven.plugins</groupId>
+        <artifactId>maven-dependency-plugin</artifactId>
+        <version>3.6.1</version>
+        <executions>
+          <execution>
+            <id>unpack-api-specs</id>
+            <phase>generate-sources</phase>
+            <goals>
+              <goal>unpack</goal>
+            </goals>
+            <configuration>
+              <artifactItems>
+                <artifactItem>
+                  <groupId>tech.yildirim</groupId>
+                  <artifactId>dummy-insurance-api-contract</artifactId>
+                  <version>${project.version}</version>
+                </artifactItem>
+              </artifactItems>
+              <outputDirectory>${project.build.directory}/generated-sources/openapi-spec
+              </outputDirectory>
+              <includes>**/*.yaml</includes>
+            </configuration>
+          </execution>
+        </executions>
+      </plugin>
+      <plugin>
+        <groupId>org.apache.maven.plugins</groupId>
         <artifactId>maven-compiler-plugin</artifactId>
         <configuration>
           <source>${java.version}</source>
@@ -113,13 +139,20 @@
         <groupId>org.openapitools</groupId>
         <artifactId>openapi-generator-maven-plugin</artifactId>
         <version>${openapi-maven-generator.version}</version>
+        <dependencies>
+          <dependency>
+            <groupId>tech.yildirim</groupId>
+            <artifactId>dummy-insurance-api-contract</artifactId>
+            <version>${project.version}</version>
+          </dependency>
+        </dependencies>
         <executions>
           <execution>
             <goals>
               <goal>generate</goal>
             </goals>
             <configuration>
-              <inputSpec>${project.basedir}/src/main/resources/api/openapi.yaml</inputSpec>
+              <inputSpec>${project.build.directory}/generated-sources/openapi-spec/api/openapi.yaml</inputSpec>
               <generatorName>spring</generatorName>
               <apiPackage>tech.yildirim.insurance.api.generated.controller</apiPackage>
               <modelPackage>tech.yildirim.insurance.api.generated.model</modelPackage>

@@ -1,0 +1,18 @@
+get:
+  tags:
+    - Customers
+  summary: "List all policies for a specific customer"
+  operationId: "getPoliciesByCustomerId"
+  parameters:
+    - $ref: '../openapi.yaml#/components/parameters/CustomerId'
+  responses:
+    '200':
+      description: "Successfully retrieved the list of policies"
+      content:
+        application/json:
+          schema:
+            type: array
+            items:
+              $ref: '../components/schemas/PolicyDto.yaml'
+    '404':
+      description: "Customer not found"

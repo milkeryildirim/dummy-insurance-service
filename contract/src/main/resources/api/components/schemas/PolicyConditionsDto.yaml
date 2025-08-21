@@ -1,0 +1,19 @@
+type: object
+description: "A set of all configurable policy conditions."
+properties:
+  freeCancellationDays:
+    type: integer
+    description: "Number of days from the start date during which cancellation is free."
+    example: 14
+  noClaimBonusPercentage:
+    type: number
+    description: "Yearly discount percentage for not making a claim."
+    example: 0.05
+  cancellationRules:
+    type: array
+    items:
+      $ref: './CancellationPenaltyRuleDto.yaml'
+required:
+  - freeCancellationDays
+  - noClaimBonusPercentage
+  - cancellationRules

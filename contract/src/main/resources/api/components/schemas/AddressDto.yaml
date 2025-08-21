@@ -1,0 +1,21 @@
+# Schema for the Address DTO
+type: object
+description: "Data Transfer Object for Address information."
+properties:
+  streetAndHouseNumber:
+    type: string
+    example: "Mustergasse 42"
+  postalCode:
+    type: string
+    example: "12345"
+  city:
+    type: string
+    example: "Musterstadt"
+  country:
+    type: string
+    example: "Germany"
+required:
+  - streetAndHouseNumber
+  - postalCode
+  - city
+  - country

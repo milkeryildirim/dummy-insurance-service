@@ -1,0 +1,14 @@
+type: object
+description: "A rule for cancellation penalties based on time remaining."
+properties:
+  monthsRemainingThreshold:
+    type: integer
+    description: "The threshold in months. The penalty applies if remaining months are <= this value."
+    example: 6
+  penaltyPercentage:
+    type: number
+    description: "The penalty percentage to be applied (e.g., 0.20 for 20%)."
+    example: 0.20
+required:
+  - monthsRemainingThreshold
+  - penaltyPercentage

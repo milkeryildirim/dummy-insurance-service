@@ -1,0 +1,16 @@
+get:
+  tags:
+   - Claims
+  summary: "Find claim by ID"
+  operationId: "getClaimById"
+  parameters:
+    - $ref: '../openapi.yaml#/components/parameters/ClaimId'
+  responses:
+    '200':
+      description: "Successful operation"
+      content:
+        application/json:
+          schema:
+            $ref: '../components/schemas/ClaimDto.yaml'
+    '404':
+      description: "Claim not found"

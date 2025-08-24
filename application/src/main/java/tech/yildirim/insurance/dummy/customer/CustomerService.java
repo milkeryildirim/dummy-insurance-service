@@ -34,6 +34,14 @@ public interface CustomerService {
   List<CustomerDto> findCustomersByName(String name);
 
   /**
+   * Finds a customer by the policy number of one of their policies.
+   *
+   * @param policyNumber The policy number to search with.
+   * @return An Optional containing the customer DTO, or empty if not found.
+   */
+  Optional<CustomerDto> findCustomerByPolicyNumber(String policyNumber);
+
+  /**
    * Create a new customer.
    *
    * @param customerDto The customer to create.

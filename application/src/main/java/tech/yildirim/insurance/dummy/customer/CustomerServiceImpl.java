@@ -7,6 +7,7 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import tech.yildirim.insurance.api.generated.model.CustomerDto;
+import tech.yildirim.insurance.dummy.policy.PolicyRepository;
 
 /**
  * Implementation of the {@link CustomerService} interface. Contains the business logic for customer
@@ -19,6 +20,7 @@ public class CustomerServiceImpl implements CustomerService {
 
   private final CustomerRepository customerRepository;
   private final CustomerMapper customerMapper;
+  private final PolicyRepository policyRepository;
 
   @Override
   public List<CustomerDto> findAllCustomers() {
@@ -42,6 +44,14 @@ public class CustomerServiceImpl implements CustomerService {
     List<Customer> customers = customerRepository.searchByName(name);
     log.info("Found {} customers with name: {}", customers.size(), name);
     return customerMapper.toDtoList(customers);
+  }
+
+  @Override
+  public Optional<CustomerDto> findCustomerByPolicyNumber(String policyNumber) {
+    log.info("Request to find customer by policy number: {}", policyNumber);
+    return policyRepository
+        .findByPolicyNumber(policyNumber)
+        .map(policy -> customerMapper.toDto(policy.getCustomer()));
   }
 
   @Override

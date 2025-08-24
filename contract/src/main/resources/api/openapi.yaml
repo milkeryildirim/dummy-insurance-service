@@ -13,6 +13,8 @@ paths:
     $ref: './paths/customers_collection.yaml'
   /customers/{id}:
     $ref: './paths/customers_item.yaml'
+  /customers/search:
+    $ref: './paths/customers_search.yaml'
   /customers/{id}/policies:
     $ref: './paths/customer_policies_collection.yaml'
   /policies:

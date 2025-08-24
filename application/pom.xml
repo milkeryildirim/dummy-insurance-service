@@ -6,11 +6,12 @@
   <parent>
     <groupId>tech.yildirim</groupId>
     <artifactId>dummy-insurance-parent</artifactId>
-    <version>0.0.1-SNAPSHOT</version>
+    <version>0.0.2-SNAPSHOT</version>
   </parent>
   <artifactId>dummy-insurance-application</artifactId>
   <name>dummy-insurance-application</name>
   <description>dummy-insurance-application</description>
+
   <dependencies>
     <dependency>
       <groupId>tech.yildirim</groupId>

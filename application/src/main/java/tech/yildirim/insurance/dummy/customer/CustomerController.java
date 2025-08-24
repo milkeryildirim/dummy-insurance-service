@@ -77,6 +77,21 @@ public class CustomerController implements CustomersApi {
   }
 
   @Override
+  public ResponseEntity<CustomerDto> getCustomerByPolicyNumber(String policyNumber) {
+    log.info("REST request to get customer by policy number: {}", policyNumber);
+    return customerService
+        .findCustomerByPolicyNumber(policyNumber)
+        .map(ResponseEntity::ok)
+        .orElseGet(
+            () -> {
+              log.warn(
+                  "Customer not found for policy number: {}, returning 404 NOT FOUND",
+                  policyNumber);
+              return ResponseEntity.notFound().build();
+            });
+  }
+
+  @Override
   public ResponseEntity<CustomerDto> updateCustomer(Long id, CustomerDto customerDto) {
     log.info("REST request to update customer with id: {}", id);
     return customerService

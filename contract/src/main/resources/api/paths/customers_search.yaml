@@ -1,0 +1,22 @@
+get:
+  tags:
+    - Customers
+  summary: "Find a customer by their policy number"
+  description: "Retrieves the customer who owns the policy with the given policy number"
+  operationId: "getCustomerByPolicyNumber"
+  parameters:
+    - name: policyNumber
+      in: query
+      description: "The policy number to search for"
+      required: true
+      schema:
+        type: string
+  responses:
+    '200':
+      description: "Successfully retrieved the customer"
+      content:
+        application/json:
+          schema:
+            $ref: '../components/schemas/CustomerDto.yaml'
+    '404':
+      description: "No customer found for the given policy number (either policy doesn't exist or has no owner)"

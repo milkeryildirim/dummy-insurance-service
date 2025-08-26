@@ -1,6 +1,4 @@
 get:
-  tags:
-    - Agencies
   summary: "Find agency by ID"
   operationId: "getAgencyById"
   parameters:

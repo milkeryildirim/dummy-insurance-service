@@ -1,6 +1,4 @@
 get:
-  tags:
-   - Claims
   summary: "Find claim by ID"
   operationId: "getClaimById"
   parameters:

@@ -1,4 +1,6 @@
 get:
+  tags:
+    - Agencies
   summary: "Retrieve all agencies"
   operationId: "getAllAgencies"
   responses:

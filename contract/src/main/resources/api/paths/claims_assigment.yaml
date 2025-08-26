@@ -1,4 +1,6 @@
 post:
+  tags:
+    - Claims
   summary: "Assign an adjuster to a claim"
   description: "Assigns an employee (who must have the CLAIMS_ADJUSTER role) to a specific claim"
   operationId: "assignAdjusterToClaim"

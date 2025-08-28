@@ -25,6 +25,14 @@ public interface PolicyService {
   Optional<PolicyDto> findPolicyById(Long id);
 
   /**
+   * Finds a policy by its unique policy number.
+   *
+   * @param policyNumber The policy number to search for.
+   * @return An Optional containing the policy DTO, or empty if not found.
+   */
+  Optional<PolicyDto> findPolicyByPolicyNumber(String policyNumber);
+
+  /**
    * Retrieves all policies in the system.
    *
    * @return A list of all policies.

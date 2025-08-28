@@ -19,6 +19,8 @@ paths:
     $ref: './paths/customer_policies_collection.yaml'
   /policies:
     $ref: './paths/policies_collection.yaml'
+  /policies/search:
+    $ref: './paths/policies_search.yaml'
   /policies/{id}:
     $ref: './paths/policies_item.yaml'
   /policies/{id}/claims:

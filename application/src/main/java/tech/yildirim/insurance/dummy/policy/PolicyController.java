@@ -59,6 +59,20 @@ public class PolicyController implements PoliciesApi {
   }
 
   @Override
+  public ResponseEntity<PolicyDto> getPolicyByPolicyNumber(String policyNumber) {
+    log.info("REST request to get policy by policy number: {}", policyNumber);
+    return policyService
+        .findPolicyByPolicyNumber(policyNumber)
+        .map(ResponseEntity::ok)
+        .orElseGet(
+            () -> {
+              log.warn(
+                  "Policy not found for policy number: {}, returning 404 NOT FOUND", policyNumber);
+              return ResponseEntity.notFound().build();
+            });
+  }
+
+  @Override
   public ResponseEntity<PolicyDto> updatePolicy(Long id, PolicyDto policyDto) {
     log.info("REST request to update policy with id: {}", id);
     return policyService

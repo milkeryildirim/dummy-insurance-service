@@ -78,6 +78,13 @@ public class PolicyServiceImpl implements PolicyService {
 
   @Override
   @Transactional(readOnly = true)
+  public Optional<PolicyDto> findPolicyByPolicyNumber(String policyNumber) {
+    log.info("Request to find policy by policy number: {}", policyNumber);
+    return policyRepository.findByPolicyNumber(policyNumber).map(policyMapper::toDto);
+  }
+
+  @Override
+  @Transactional(readOnly = true)
   public List<PolicyDto> findAllPolicies() {
     log.info("Request to find all policies");
     List<Policy> policies = policyRepository.findAll();

@@ -1,0 +1,22 @@
+get:
+  tags:
+    - Policies
+  summary: "Find a policy by its policy number"
+  description: "Retrieves the policy with the given policy number"
+  operationId: "getPolicyByPolicyNumber"
+  parameters:
+    - name: policyNumber
+      in: query
+      description: "The policy number to search for"
+      required: true
+      schema:
+        type: string
+  responses:
+    '200':
+      description: "Successfully retrieved the policy"
+      content:
+        application/json:
+          schema:
+            $ref: '../components/schemas/PolicyDto.yaml'
+    '404':
+      description: "No policy found for the given policy number"

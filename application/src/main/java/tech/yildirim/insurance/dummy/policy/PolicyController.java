@@ -7,9 +7,7 @@ import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.RestController;
 import tech.yildirim.insurance.api.generated.controller.PoliciesApi;
-import tech.yildirim.insurance.api.generated.model.ClaimDto;
 import tech.yildirim.insurance.api.generated.model.PolicyDto;
-import tech.yildirim.insurance.dummy.claim.ClaimService;
 
 /**
  * REST Controller for managing policies. Implements the generated {@link PoliciesApi} interface.
@@ -20,7 +18,6 @@ import tech.yildirim.insurance.dummy.claim.ClaimService;
 public class PolicyController implements PoliciesApi {
 
   private final PolicyService policyService;
-  private final ClaimService claimService;
 
   @Override
   public ResponseEntity<PolicyDto> createPolicy(PolicyDto policyDto) {
@@ -87,24 +84,5 @@ public class PolicyController implements PoliciesApi {
               log.warn("Failed to update. Policy with id: {} not found.", id);
               return ResponseEntity.notFound().build();
             });
-  }
-
-  @Override
-  public ResponseEntity<List<ClaimDto>> getClaimsByPolicyId(Long id) {
-    log.info("REST request to get claims for policy with id: {}", id);
-    List<ClaimDto> claims = claimService.findClaimsByPolicyId(id);
-    log.debug("Found {} claims for policy with id {}", claims.size(), id);
-    return ResponseEntity.ok(claims);
-  }
-
-  @Override
-  public ResponseEntity<ClaimDto> submitClaim(Long id, ClaimDto claimDto) {
-    log.info("REST request to submit a claim for policy with id: {}", id);
-    ClaimDto submittedClaim = claimService.submitClaim(id, claimDto);
-    log.info(
-        "Successfully submitted claim with id {} for policy with id {}",
-        submittedClaim.getId(),
-        id);
-    return new ResponseEntity<>(submittedClaim, HttpStatus.CREATED);
   }
 }

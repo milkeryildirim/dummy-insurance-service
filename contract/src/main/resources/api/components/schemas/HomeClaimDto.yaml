@@ -1,0 +1,14 @@
+allOf:
+  - $ref: './ClaimDto.yaml'
+  - type: object
+    properties:
+      typeOfDamage:
+        type: string
+        description: "Type of damage to the home"
+        example: "Water damage"
+        nullable: true
+      damagedItems:
+        type: string
+        description: "List of damaged items in the home"
+        example: "Living room carpet, kitchen cabinets, electronics"
+        nullable: true

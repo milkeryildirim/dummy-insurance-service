@@ -5,77 +5,39 @@ import org.mapstruct.Mapper;
 import org.mapstruct.Mapping;
 import org.mapstruct.MappingTarget;
 import org.mapstruct.factory.Mappers;
-import tech.yildirim.insurance.api.generated.model.ClaimDto;
+import tech.yildirim.insurance.api.generated.model.AutoClaimDto;
+import tech.yildirim.insurance.api.generated.model.HealthClaimDto;
+import tech.yildirim.insurance.api.generated.model.HomeClaimDto;
 
 @Mapper(componentModel = "spring")
 public interface ClaimMapper {
 
   ClaimMapper INSTANCE = Mappers.getMapper(ClaimMapper.class);
 
-  /**
-   * Maps a Claim entity (including its subclasses) to the unified ClaimDto. MapStruct is smart
-   * enough to find the fields in the subclasses (e.g., licensePlate).
-   *
-   * @param claim The source entity (can be AutoClaim, HomeClaim, etc.).
-   * @return The target DTO.
-   */
-  @Mapping(source = "policy.id", target = "policyId")
-  @Mapping(source = "assignedAdjuster.phoneNumber", target = "assignedAdjusterContact")
-  ClaimDto toDto(Claim claim);
+  // ========== AutoClaim Mappings ==========
 
   /**
-   * Maps a specific {@link AutoClaim} entity to the unified {@link ClaimDto}.
+   * Maps an {@link AutoClaim} entity to {@link AutoClaimDto}.
+   *
    * @param autoClaim The source AutoClaim entity.
-   * @return The target DTO, populated with common and auto-specific fields.
+   * @return The target AutoClaimDto.
    */
   @Mapping(source = "policy.id", target = "policyId")
+  @Mapping(source = "assignedAdjuster.id", target = "assignedAdjusterId")
+  @Mapping(
+      target = "assignedAdjusterName",
+      expression =
+          "java(autoClaim.getAssignedAdjuster() != null ? autoClaim.getAssignedAdjuster().getFirstName() + \" \" + autoClaim.getAssignedAdjuster().getLastName() : null)")
   @Mapping(source = "assignedAdjuster.phoneNumber", target = "assignedAdjusterContact")
-  ClaimDto toDto(AutoClaim autoClaim);
+  AutoClaimDto toDto(AutoClaim autoClaim);
+
+  /** Maps a list of AutoClaim entities to a list of AutoClaimDtos. */
+  List<AutoClaimDto> toAutoClaimDtoList(List<AutoClaim> autoClaims);
 
   /**
-   * Maps a specific {@link HomeClaim} entity to the unified {@link ClaimDto}.
-   * @param homeClaim The source HomeClaim entity.
-   * @return The target DTO, populated with common and home-specific fields.
-   */
-  @Mapping(source = "policy.id", target = "policyId")
-  @Mapping(source = "assignedAdjuster.phoneNumber", target = "assignedAdjusterContact")
-  ClaimDto toDto(HomeClaim homeClaim);
-
-  /**
-   * Maps a specific {@link HealthClaim} entity to the unified {@link ClaimDto}.
-   * @param healthClaim The source HealthClaim entity.
-   * @return The target DTO, populated with common and health-specific fields.
-   */
-  @Mapping(source = "policy.id", target = "policyId")
-  @Mapping(source = "assignedAdjuster.phoneNumber", target = "assignedAdjusterContact")
-  ClaimDto toDto(HealthClaim healthClaim);
-
-  /**
-   * Maps a list of Claim entities to a list of ClaimDtos.
+   * Populates an {@link AutoClaim} entity with data from an {@link AutoClaimDto}.
    *
-   * @param claims The list of entities.
-   * @return The list of DTOs.
-   */
-  List<ClaimDto> toDtoList(List<Claim> claims);
-
-  /**
-   * Populates a Claim entity with data from a ClaimDto. This method is used by the service layer
-   * after it has instantiated the correct concrete Claim subclass (e.g., new AutoClaim()).
-   *
-   * @param dto The source DTO.
-   * @param entity The target entity to be populated.
-   */
-  @Mapping(target = "id", ignore = true)
-  @Mapping(target = "claimNumber", ignore = true)
-  @Mapping(target = "policy", ignore = true)
-  @Mapping(target = "dateReported", ignore = true)
-  @Mapping(target = "status", ignore = true)
-  @Mapping(target = "paidAmount", ignore = true)
-  void populateClaimFromDto(ClaimDto dto, @MappingTarget Claim entity);
-
-  /**
-   * Populates a specific {@link AutoClaim} entity with data from a ClaimDto.
-   * @param dto The source DTO.
+   * @param dto The source AutoClaimDto.
    * @param entity The target AutoClaim entity to be populated.
    */
   @Mapping(target = "id", ignore = true)
@@ -84,11 +46,33 @@ public interface ClaimMapper {
   @Mapping(target = "dateReported", ignore = true)
   @Mapping(target = "status", ignore = true)
   @Mapping(target = "paidAmount", ignore = true)
-  void populateClaimFromDto(ClaimDto dto, @MappingTarget AutoClaim entity);
+  @Mapping(target = "assignedAdjuster", ignore = true)
+  void populateAutoClaimFromDto(AutoClaimDto dto, @MappingTarget AutoClaim entity);
+
+  // ========== HomeClaim Mappings ==========
 
   /**
-   * Populates a specific {@link HomeClaim} entity with data from a ClaimDto.
-   * @param dto The source DTO.
+   * Maps a {@link HomeClaim} entity to {@link HomeClaimDto}.
+   *
+   * @param homeClaim The source HomeClaim entity.
+   * @return The target HomeClaimDto.
+   */
+  @Mapping(source = "policy.id", target = "policyId")
+  @Mapping(source = "assignedAdjuster.id", target = "assignedAdjusterId")
+  @Mapping(
+      target = "assignedAdjusterName",
+      expression =
+          "java(homeClaim.getAssignedAdjuster() != null ? homeClaim.getAssignedAdjuster().getFirstName() + \" \" + homeClaim.getAssignedAdjuster().getLastName() : null)")
+  @Mapping(source = "assignedAdjuster.phoneNumber", target = "assignedAdjusterContact")
+  HomeClaimDto toDto(HomeClaim homeClaim);
+
+  /** Maps a list of HomeClaim entities to a list of HomeClaimDtos. */
+  List<HomeClaimDto> toHomeClaimDtoList(List<HomeClaim> homeClaims);
+
+  /**
+   * Populates a {@link HomeClaim} entity with data from a {@link HomeClaimDto}.
+   *
+   * @param dto The source HomeClaimDto.
    * @param entity The target HomeClaim entity to be populated.
    */
   @Mapping(target = "id", ignore = true)
@@ -97,11 +81,33 @@ public interface ClaimMapper {
   @Mapping(target = "dateReported", ignore = true)
   @Mapping(target = "status", ignore = true)
   @Mapping(target = "paidAmount", ignore = true)
-  void populateClaimFromDto(ClaimDto dto, @MappingTarget HomeClaim entity);
+  @Mapping(target = "assignedAdjuster", ignore = true)
+  void populateHomeClaimFromDto(HomeClaimDto dto, @MappingTarget HomeClaim entity);
+
+  // ========== HealthClaim Mappings ==========
 
   /**
-   * Populates a specific {@link HealthClaim} entity with data from a ClaimDto.
-   * @param dto The source DTO.
+   * Maps a {@link HealthClaim} entity to {@link HealthClaimDto}.
+   *
+   * @param healthClaim The source HealthClaim entity.
+   * @return The target HealthClaimDto.
+   */
+  @Mapping(source = "policy.id", target = "policyId")
+  @Mapping(source = "assignedAdjuster.id", target = "assignedAdjusterId")
+  @Mapping(
+      target = "assignedAdjusterName",
+      expression =
+          "java(healthClaim.getAssignedAdjuster() != null ? healthClaim.getAssignedAdjuster().getFirstName() + \" \" + healthClaim.getAssignedAdjuster().getLastName() : null)")
+  @Mapping(source = "assignedAdjuster.phoneNumber", target = "assignedAdjusterContact")
+  HealthClaimDto toDto(HealthClaim healthClaim);
+
+  /** Maps a list of HealthClaim entities to a list of HealthClaimDtos. */
+  List<HealthClaimDto> toHealthClaimDtoList(List<HealthClaim> healthClaims);
+
+  /**
+   * Populates a {@link HealthClaim} entity with data from a {@link HealthClaimDto}.
+   *
+   * @param dto The source HealthClaimDto.
    * @param entity The target HealthClaim entity to be populated.
    */
   @Mapping(target = "id", ignore = true)
@@ -110,5 +116,6 @@ public interface ClaimMapper {
   @Mapping(target = "dateReported", ignore = true)
   @Mapping(target = "status", ignore = true)
   @Mapping(target = "paidAmount", ignore = true)
-  void populateClaimFromDto(ClaimDto dto, @MappingTarget HealthClaim entity);
+  @Mapping(target = "assignedAdjuster", ignore = true)
+  void populateHealthClaimFromDto(HealthClaimDto dto, @MappingTarget HealthClaim entity);
 }

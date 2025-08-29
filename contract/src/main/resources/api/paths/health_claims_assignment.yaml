@@ -1,0 +1,26 @@
+put:
+  tags:
+    - Health Claims
+  summary: "Assign an adjuster to a health claim"
+  operationId: "assignAdjusterToHealthClaim"
+  parameters:
+    - $ref: '../openapi.yaml#/components/parameters/ClaimId'
+  requestBody:
+    description: "Adjuster assignment request"
+    content:
+      application/json:
+        schema:
+          $ref: '../components/schemas/AssignAdjusterRequestDto.yaml'
+    required: true
+  responses:
+    '200':
+      description: "Adjuster assigned successfully"
+      content:
+        application/json:
+          schema:
+            $ref: '../components/schemas/HealthClaimDto.yaml'
+    '404':
+      description: "Health claim not found"
+    '400':
+      description: "Invalid input"
+

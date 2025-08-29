@@ -1,0 +1,14 @@
+allOf:
+  - $ref: './ClaimDto.yaml'
+  - type: object
+    properties:
+      medicalProvider:
+        type: string
+        description: "Name of the medical provider"
+        example: "City General Hospital"
+        nullable: true
+      procedureCode:
+        type: string
+        description: "Medical procedure code"
+        example: "CPT-99213"
+        nullable: true

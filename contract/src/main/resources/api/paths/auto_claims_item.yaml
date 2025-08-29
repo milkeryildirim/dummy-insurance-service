@@ -1,0 +1,55 @@
+get:
+  tags:
+    - Auto Claims
+  summary: "Find auto claim by ID"
+  operationId: "getAutoClaimById"
+  parameters:
+    - $ref: '../openapi.yaml#/components/parameters/ClaimId'
+  responses:
+    '200':
+      description: "Successful operation"
+      content:
+        application/json:
+          schema:
+            $ref: '../components/schemas/AutoClaimDto.yaml'
+    '404':
+      description: "Auto claim not found"
+
+put:
+  tags:
+    - Auto Claims
+  summary: "Update an existing auto claim"
+  operationId: "updateAutoClaim"
+  parameters:
+    - $ref: '../openapi.yaml#/components/parameters/ClaimId'
+  requestBody:
+    description: "Auto claim object that needs to be updated"
+    content:
+      application/json:
+        schema:
+          $ref: '../components/schemas/AutoClaimDto.yaml'
+    required: true
+  responses:
+    '200':
+      description: "Auto claim updated successfully"
+      content:
+        application/json:
+          schema:
+            $ref: '../components/schemas/AutoClaimDto.yaml'
+    '404':
+      description: "Auto claim not found"
+    '400':
+      description: "Invalid input"
+
+delete:
+  tags:
+    - Auto Claims
+  summary: "Delete an auto claim"
+  operationId: "deleteAutoClaim"
+  parameters:
+    - $ref: '../openapi.yaml#/components/parameters/ClaimId'
+  responses:
+    '204':
+      description: "Auto claim deleted successfully"
+    '404':
+      description: "Auto claim not found"

@@ -1,0 +1,55 @@
+get:
+  tags:
+    - Health Claims
+  summary: "Find health claim by ID"
+  operationId: "getHealthClaimById"
+  parameters:
+    - $ref: '../openapi.yaml#/components/parameters/ClaimId'
+  responses:
+    '200':
+      description: "Successful operation"
+      content:
+        application/json:
+          schema:
+            $ref: '../components/schemas/HealthClaimDto.yaml'
+    '404':
+      description: "Health claim not found"
+
+put:
+  tags:
+    - Health Claims
+  summary: "Update an existing health claim"
+  operationId: "updateHealthClaim"
+  parameters:
+    - $ref: '../openapi.yaml#/components/parameters/ClaimId'
+  requestBody:
+    description: "Health claim object that needs to be updated"
+    content:
+      application/json:
+        schema:
+          $ref: '../components/schemas/HealthClaimDto.yaml'
+    required: true
+  responses:
+    '200':
+      description: "Health claim updated successfully"
+      content:
+        application/json:
+          schema:
+            $ref: '../components/schemas/HealthClaimDto.yaml'
+    '404':
+      description: "Health claim not found"
+    '400':
+      description: "Invalid input"
+
+delete:
+  tags:
+    - Health Claims
+  summary: "Delete a health claim"
+  operationId: "deleteHealthClaim"
+  parameters:
+    - $ref: '../openapi.yaml#/components/parameters/ClaimId'
+  responses:
+    '204':
+      description: "Health claim deleted successfully"
+    '404':
+      description: "Health claim not found"

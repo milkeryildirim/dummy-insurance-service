@@ -1,0 +1,55 @@
+get:
+  tags:
+    - Home Claims
+  summary: "Find home claim by ID"
+  operationId: "getHomeClaimById"
+  parameters:
+    - $ref: '../openapi.yaml#/components/parameters/ClaimId'
+  responses:
+    '200':
+      description: "Successful operation"
+      content:
+        application/json:
+          schema:
+            $ref: '../components/schemas/HomeClaimDto.yaml'
+    '404':
+      description: "Home claim not found"
+
+put:
+  tags:
+    - Home Claims
+  summary: "Update an existing home claim"
+  operationId: "updateHomeClaim"
+  parameters:
+    - $ref: '../openapi.yaml#/components/parameters/ClaimId'
+  requestBody:
+    description: "Home claim object that needs to be updated"
+    content:
+      application/json:
+        schema:
+          $ref: '../components/schemas/HomeClaimDto.yaml'
+    required: true
+  responses:
+    '200':
+      description: "Home claim updated successfully"
+      content:
+        application/json:
+          schema:
+            $ref: '../components/schemas/HomeClaimDto.yaml'
+    '404':
+      description: "Home claim not found"
+    '400':
+      description: "Invalid input"
+
+delete:
+  tags:
+    - Home Claims
+  summary: "Delete a home claim"
+  operationId: "deleteHomeClaim"
+  parameters:
+    - $ref: '../openapi.yaml#/components/parameters/ClaimId'
+  responses:
+    '204':
+      description: "Home claim deleted successfully"
+    '404':
+      description: "Home claim not found"

@@ -7,7 +7,10 @@ import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import tech.yildirim.insurance.api.generated.model.AutoClaimDto;
 import tech.yildirim.insurance.api.generated.model.ClaimDto;
+import tech.yildirim.insurance.api.generated.model.HealthClaimDto;
+import tech.yildirim.insurance.api.generated.model.HomeClaimDto;
 import tech.yildirim.insurance.dummy.common.ResourceNotFoundException;
 import tech.yildirim.insurance.dummy.employee.Employee;
 import tech.yildirim.insurance.dummy.employee.EmployeeRepository;
@@ -51,10 +54,22 @@ public class ClaimServiceImpl implements ClaimService {
               + policy.getStatus());
     }
 
+    // Validate DTO type matches policy type
+    validateDtoMatchesPolicyType(claimDto, policy.getType());
+
     Claim claim = createClaimShellForPolicyType(policy.getType());
     log.debug("Created a new {} shell for the claim.", policy.getType());
 
-    claimMapper.populateClaimFromDto(claimDto, claim);
+    // Populate claim based on its specific type
+    switch (claim) {
+      case AutoClaim autoClaim ->
+          claimMapper.populateAutoClaimFromDto((AutoClaimDto) claimDto, autoClaim);
+      case HomeClaim homeClaim ->
+          claimMapper.populateHomeClaimFromDto((HomeClaimDto) claimDto, homeClaim);
+      case HealthClaim healthClaim ->
+          claimMapper.populateHealthClaimFromDto((HealthClaimDto) claimDto, healthClaim);
+      default -> throw new UnsupportedOperationException("Claim type not supported: " + claim);
+    }
 
     claim.setPolicy(policy);
     claim.setClaimNumber(generateClaimNumber());
@@ -65,14 +80,16 @@ public class ClaimServiceImpl implements ClaimService {
         "Successfully submitted and saved claim with id {} and number {}",
         savedClaim.getId(),
         savedClaim.getClaimNumber());
-    return claimMapper.toDto(savedClaim);
+
+    // Return DTO based on claim specific type
+    return toDto(savedClaim);
   }
 
   @Override
   @Transactional(readOnly = true)
   public Optional<ClaimDto> findClaimById(Long claimId) {
     log.info("Request to find claim with id: {}", claimId);
-    return claimRepository.findById(claimId).map(claimMapper::toDto);
+    return claimRepository.findById(claimId).map(this::toDto);
   }
 
   @Override
@@ -85,7 +102,7 @@ public class ClaimServiceImpl implements ClaimService {
     }
     List<Claim> claims = claimRepository.findByPolicyId(policyId);
     log.info("Found {} claims for policyId: {}", claims.size(), policyId);
-    return claimMapper.toDtoList(claims);
+    return toDtoList(claims);
   }
 
   @Override
@@ -129,7 +146,7 @@ public class ClaimServiceImpl implements ClaimService {
 
     Claim updatedClaim = claimRepository.save(claim);
     log.info("Successfully updated claim {} with assigned adjuster.", updatedClaim.getId());
-    return claimMapper.toDto(updatedClaim);
+    return toDto(updatedClaim);
   }
 
   /**
@@ -153,5 +170,50 @@ public class ClaimServiceImpl implements ClaimService {
   private String generateClaimNumber() {
     // This is simple but good enough for a dummy service.
     return "CLM-" + UUID.randomUUID().toString().toUpperCase().substring(0, 13);
+  }
+
+  private ClaimDto toDto(Claim claim) {
+    return switch (claim) {
+      case AutoClaim autoClaim -> claimMapper.toDto(autoClaim);
+      case HomeClaim homeClaim -> claimMapper.toDto(homeClaim);
+      case HealthClaim healthClaim -> claimMapper.toDto(healthClaim);
+      default -> throw new UnsupportedOperationException("Claim type not supported: " + claim);
+    };
+  }
+
+  private List<ClaimDto> toDtoList(List<Claim> claims) {
+    return claims.stream().map(this::toDto).toList();
+  }
+
+  /**
+   * Validates that the given DTO matches the expected type for the policy. Throws an
+   * IllegalArgumentException if there is a mismatch.
+   */
+  private void validateDtoMatchesPolicyType(ClaimDto claimDto, PolicyType policyType) {
+    boolean isValid =
+        switch (policyType) {
+          case AUTO -> claimDto instanceof AutoClaimDto;
+          case HOME -> claimDto instanceof HomeClaimDto;
+          case HEALTH -> claimDto instanceof HealthClaimDto;
+          default -> {
+            log.error("Unsupported policy type for validation: {}", policyType);
+            throw new UnsupportedOperationException(
+                "Validation not supported for policy type " + policyType);
+          }
+        };
+
+    if (!isValid) {
+      log.error(
+          "DTO type mismatch. Expected DTO for policy type {}, but got {}",
+          policyType,
+          claimDto.getClass().getSimpleName());
+      throw new IllegalArgumentException(
+          "Policy type "
+              + policyType
+              + " does not match claim type "
+              + claimDto.getClass().getSimpleName());
+    }
+
+    log.debug("DTO validation passed for policy type {}", policyType);
   }
 }

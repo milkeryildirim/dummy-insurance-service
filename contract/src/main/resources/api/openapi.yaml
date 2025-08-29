@@ -23,12 +23,27 @@ paths:
     $ref: './paths/policies_search.yaml'
   /policies/{id}:
     $ref: './paths/policies_item.yaml'
-  /policies/{id}/claims:
-    $ref: './paths/policies_claims_collection.yaml'
-  /claims/{id}:
-    $ref: './paths/claims_item.yaml'
-  /claims/{id}/assign-adjuster:
-    $ref: './paths/claims_assigment.yaml'
+  # Auto Claims specific endpoints
+  /auto-claims:
+    $ref: './paths/auto_claims_collection.yaml'
+  /auto-claims/{id}:
+    $ref: './paths/auto_claims_item.yaml'
+  /auto-claims/{id}/assign-adjuster:
+    $ref: './paths/auto_claims_assignment.yaml'
+  # Home Claims specific endpoints
+  /home-claims:
+    $ref: './paths/home_claims_collection.yaml'
+  /home-claims/{id}:
+    $ref: './paths/home_claims_item.yaml'
+  /home-claims/{id}/assign-adjuster:
+    $ref: './paths/home_claims_assignment.yaml'
+  # Health Claims specific endpoints
+  /health-claims:
+    $ref: './paths/health_claims_collection.yaml'
+  /health-claims/{id}:
+    $ref: './paths/health_claims_item.yaml'
+  /health-claims/{id}/assign-adjuster:
+    $ref: './paths/health_claims_assignment.yaml'
   /employees:
     $ref: './paths/employees_collection.yaml'
   /employees/{id}:
@@ -51,6 +66,12 @@ components:
       $ref: './components/schemas/PolicyDto.yaml'
     ClaimDto:
       $ref: './components/schemas/ClaimDto.yaml'
+    AutoClaimDto:
+      $ref: './components/schemas/AutoClaimDto.yaml'
+    HomeClaimDto:
+      $ref: './components/schemas/HomeClaimDto.yaml'
+    HealthClaimDto:
+      $ref: './components/schemas/HealthClaimDto.yaml'
     AssignAdjusterDto:
       $ref: './components/schemas/AssignAdjusterRequestDto.yaml'
     EmployeeDto:

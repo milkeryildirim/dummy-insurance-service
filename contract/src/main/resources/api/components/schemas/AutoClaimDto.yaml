@@ -1,0 +1,21 @@
+allOf:
+  - $ref: './ClaimDto.yaml'
+  - type: object
+    properties:
+      licensePlate:
+        type: string
+        description: "License plate of the vehicle involved in the claim"
+        example: "ABC123"
+        minLength: 1
+      vehicleVin:
+        type: string
+        description: "Vehicle Identification Number"
+        example: "1HGBH41JXMN109186"
+        nullable: true
+      accidentLocation:
+        type: string
+        description: "Location where the accident occurred"
+        example: "Main St and 1st Ave, Downtown"
+        nullable: true
+    required:
+      - licensePlate

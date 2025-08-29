@@ -1,0 +1,26 @@
+put:
+  tags:
+    - Home Claims
+  summary: "Assign an adjuster to a home claim"
+  operationId: "assignAdjusterToHomeClaim"
+  parameters:
+    - $ref: '../openapi.yaml#/components/parameters/ClaimId'
+  requestBody:
+    description: "Adjuster assignment request"
+    content:
+      application/json:
+        schema:
+          $ref: '../components/schemas/AssignAdjusterRequestDto.yaml'
+    required: true
+  responses:
+    '200':
+      description: "Adjuster assigned successfully"
+      content:
+        application/json:
+          schema:
+            $ref: '../components/schemas/HomeClaimDto.yaml'
+    '404':
+      description: "Home claim not found"
+    '400':
+      description: "Invalid input"
+

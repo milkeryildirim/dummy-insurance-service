@@ -1,5 +1,9 @@
 package tech.yildirim.insurance.dummy.claim;
 
+import static tech.yildirim.insurance.api.generated.model.ClaimDto.ClaimTypeEnum.AUTO;
+import static tech.yildirim.insurance.api.generated.model.ClaimDto.ClaimTypeEnum.HEALTH;
+import static tech.yildirim.insurance.api.generated.model.ClaimDto.ClaimTypeEnum.HOME;
+
 import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
@@ -182,6 +186,42 @@ public class ClaimServiceImpl implements ClaimService {
     log.info("Successfully updated claim with id: {}", updatedClaim.getId());
 
     return toDto(updatedClaim);
+  }
+
+  @Override
+  @Transactional
+  public void deleteClaim(Long claimId) {
+    log.info("Attempting to delete claim with id: {}", claimId);
+
+    Claim existingClaim =
+        claimRepository
+            .findById(claimId)
+            .orElseThrow(
+                () -> {
+                  log.warn("Cannot delete claim. Claim with id {} not found.", claimId);
+                  return new ResourceNotFoundException("Claim not found with id: " + claimId);
+                });
+
+    claimRepository.delete(existingClaim);
+    log.info("Successfully deleted claim with id: {}", claimId);
+  }
+
+  @Override
+  @Transactional(readOnly = true)
+  public List<ClaimDto> getAllClaimsByType(ClaimDto.ClaimTypeEnum claimType) {
+    log.info("Request to find all claims of type: {}", claimType);
+
+    String cType =
+        switch (claimType) {
+          case AUTO -> AutoClaim.CLAIM_TYPE;
+          case HOME -> HomeClaim.CLAIM_TYPE;
+          case HEALTH -> HealthClaim.CLAIM_TYPE;
+        };
+
+    List<Claim> claims = claimRepository.findClaimByClaimType(cType);
+    log.info("Found {} claims of type: {}", claims.size(), claimType);
+
+    return toDtoList(claims);
   }
 
   /**

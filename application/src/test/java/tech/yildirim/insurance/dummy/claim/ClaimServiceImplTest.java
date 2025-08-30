@@ -11,6 +11,7 @@ import static org.mockito.Mockito.when;
 
 import java.math.BigDecimal;
 import java.time.LocalDate;
+import java.util.List;
 import java.util.Optional;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
@@ -758,7 +759,246 @@ class ClaimServiceImplTest {
         .contains("HealthClaim does not match provided DTO type AutoClaimDto");
   }
 
-  // ==================== HELPER METHODS ====================
+  // ==================== DELETE CLAIM TESTS ====================
+
+  @Test
+  @DisplayName("Should delete claim successfully when claim exists")
+  void deleteClaim_withExistingClaim_shouldDeleteSuccessfully() {
+    // Given: An existing claim
+    long claimId = 1L;
+    AutoClaim existingClaim = new AutoClaim();
+    existingClaim.setId(claimId);
+    existingClaim.setDescription("Claim to be deleted");
+    existingClaim.setLicensePlate("DEL123");
+
+    when(claimRepository.findById(claimId)).thenReturn(Optional.of(existingClaim));
+
+    // When: The deleteClaim method is called
+    claimService.deleteClaim(claimId);
+
+    // Then: Verify the claim was deleted
+    verify(claimRepository).findById(claimId);
+    verify(claimRepository).delete(existingClaim);
+  }
+
+  @Test
+  @DisplayName("Should throw ResourceNotFoundException when deleting non-existent claim")
+  void deleteClaim_withNonExistentClaim_shouldThrowException() {
+    // Given: A non-existent claim ID
+    long nonExistentClaimId = 99L;
+    when(claimRepository.findById(nonExistentClaimId)).thenReturn(Optional.empty());
+
+    // When & Then: Assert that the correct exception is thrown
+    ResourceNotFoundException exception =
+        assertThrows(
+            ResourceNotFoundException.class, () -> claimService.deleteClaim(nonExistentClaimId));
+
+    assertThat(exception.getMessage()).contains("Claim not found with id: " + nonExistentClaimId);
+    verify(claimRepository).findById(nonExistentClaimId);
+    verify(claimRepository, never()).delete(any());
+  }
+
+  @Test
+  @DisplayName("Should delete AutoClaim successfully")
+  void deleteClaim_withAutoClaim_shouldDeleteSuccessfully() {
+    // Given: An existing AutoClaim
+    long claimId = 1L;
+    AutoClaim autoClaim = new AutoClaim();
+    autoClaim.setId(claimId);
+    autoClaim.setLicensePlate("AUTO123");
+    autoClaim.setVehicleVin("VIN123456789");
+
+    when(claimRepository.findById(claimId)).thenReturn(Optional.of(autoClaim));
+
+    // When
+    claimService.deleteClaim(claimId);
+
+    // Then
+    verify(claimRepository).delete(autoClaim);
+  }
+
+  @Test
+  @DisplayName("Should delete HomeClaim successfully")
+  void deleteClaim_withHomeClaim_shouldDeleteSuccessfully() {
+    // Given: An existing HomeClaim
+    long claimId = 2L;
+    HomeClaim homeClaim = new HomeClaim();
+    homeClaim.setId(claimId);
+    homeClaim.setTypeOfDamage("Fire damage");
+    homeClaim.setDamagedItems("Furniture, electronics");
+
+    when(claimRepository.findById(claimId)).thenReturn(Optional.of(homeClaim));
+
+    // When
+    claimService.deleteClaim(claimId);
+
+    // Then
+    verify(claimRepository).delete(homeClaim);
+  }
+
+  @Test
+  @DisplayName("Should delete HealthClaim successfully")
+  void deleteClaim_withHealthClaim_shouldDeleteSuccessfully() {
+    // Given: An existing HealthClaim
+    long claimId = 3L;
+    HealthClaim healthClaim = new HealthClaim();
+    healthClaim.setId(claimId);
+    healthClaim.setMedicalProvider("City Hospital");
+    healthClaim.setProcedureCode("CPT-99213");
+
+    when(claimRepository.findById(claimId)).thenReturn(Optional.of(healthClaim));
+
+    // When
+    claimService.deleteClaim(claimId);
+
+    // Then
+    verify(claimRepository).delete(healthClaim);
+  }
+
+  // ==================== GET ALL CLAIMS BY TYPE TESTS ====================
+
+  @Test
+  @DisplayName("Should return all auto claims when requesting AUTO type")
+  void getAllClaimsByType_withAutoType_shouldReturnAutoClaims() {
+    // Given: Multiple auto claims in the repository
+    AutoClaim autoClaim1 = new AutoClaim();
+    autoClaim1.setId(1L);
+    autoClaim1.setLicensePlate("AUTO001");
+    autoClaim1.setVehicleVin("VIN001");
+
+    AutoClaim autoClaim2 = new AutoClaim();
+    autoClaim2.setId(2L);
+    autoClaim2.setLicensePlate("AUTO002");
+    autoClaim2.setVehicleVin("VIN002");
+
+    List<Claim> autoClaims = List.of(autoClaim1, autoClaim2);
+
+    AutoClaimDto autoClaimDto1 =
+        new AutoClaimDto().id(1L).licensePlate("AUTO001").vehicleVin("VIN001");
+
+    AutoClaimDto autoClaimDto2 =
+        new AutoClaimDto().id(2L).licensePlate("AUTO002").vehicleVin("VIN002");
+
+    when(claimRepository.findClaimByClaimType(AutoClaim.CLAIM_TYPE)).thenReturn(autoClaims);
+    when(claimMapper.toDto(autoClaim1)).thenReturn(autoClaimDto1);
+    when(claimMapper.toDto(autoClaim2)).thenReturn(autoClaimDto2);
+
+    // When: Requesting all auto claims
+    List<ClaimDto> result = claimService.getAllClaimsByType(ClaimDto.ClaimTypeEnum.AUTO);
+
+    // Then: Verify correct claims are returned
+    assertThat(result).hasSize(2).containsExactly(autoClaimDto1, autoClaimDto2);
+    verify(claimRepository).findClaimByClaimType(AutoClaim.CLAIM_TYPE);
+  }
+
+  @Test
+  @DisplayName("Should return all home claims when requesting HOME type")
+  void getAllClaimsByType_withHomeType_shouldReturnHomeClaims() {
+    // Given: Multiple home claims in the repository
+    HomeClaim homeClaim1 = new HomeClaim();
+    homeClaim1.setId(1L);
+    homeClaim1.setTypeOfDamage("Water damage");
+    homeClaim1.setDamagedItems("Kitchen cabinets");
+
+    HomeClaim homeClaim2 = new HomeClaim();
+    homeClaim2.setId(2L);
+    homeClaim2.setTypeOfDamage("Fire damage");
+    homeClaim2.setDamagedItems("Living room furniture");
+
+    List<Claim> homeClaims = List.of(homeClaim1, homeClaim2);
+
+    HomeClaimDto homeClaimDto1 =
+        new HomeClaimDto().id(1L).typeOfDamage("Water damage").damagedItems("Kitchen cabinets");
+
+    HomeClaimDto homeClaimDto2 =
+        new HomeClaimDto().id(2L).typeOfDamage("Fire damage").damagedItems("Living room furniture");
+
+    when(claimRepository.findClaimByClaimType(HomeClaim.CLAIM_TYPE)).thenReturn(homeClaims);
+    when(claimMapper.toDto(homeClaim1)).thenReturn(homeClaimDto1);
+    when(claimMapper.toDto(homeClaim2)).thenReturn(homeClaimDto2);
+
+    // When: Requesting all home claims
+    List<ClaimDto> result = claimService.getAllClaimsByType(ClaimDto.ClaimTypeEnum.HOME);
+
+    // Then: Verify correct claims are returned
+    assertThat(result).hasSize(2).containsExactly(homeClaimDto1, homeClaimDto2);
+    verify(claimRepository).findClaimByClaimType(HomeClaim.CLAIM_TYPE);
+  }
+
+  @Test
+  @DisplayName("Should return all health claims when requesting HEALTH type")
+  void getAllClaimsByType_withHealthType_shouldReturnHealthClaims() {
+    // Given: Multiple health claims in the repository
+    HealthClaim healthClaim1 = new HealthClaim();
+    healthClaim1.setId(1L);
+    healthClaim1.setMedicalProvider("City General Hospital");
+    healthClaim1.setProcedureCode("CPT-99213");
+
+    HealthClaim healthClaim2 = new HealthClaim();
+    healthClaim2.setId(2L);
+    healthClaim2.setMedicalProvider("Downtown Clinic");
+    healthClaim2.setProcedureCode("CPT-99214");
+
+    List<Claim> healthClaims = List.of(healthClaim1, healthClaim2);
+
+    HealthClaimDto healthClaimDto1 =
+        new HealthClaimDto()
+            .id(1L)
+            .medicalProvider("City General Hospital")
+            .procedureCode("CPT-99213");
+
+    HealthClaimDto healthClaimDto2 =
+        new HealthClaimDto().id(2L).medicalProvider("Downtown Clinic").procedureCode("CPT-99214");
+
+    when(claimRepository.findClaimByClaimType(HealthClaim.CLAIM_TYPE)).thenReturn(healthClaims);
+    when(claimMapper.toDto(healthClaim1)).thenReturn(healthClaimDto1);
+    when(claimMapper.toDto(healthClaim2)).thenReturn(healthClaimDto2);
+
+    // When: Requesting all health claims
+    List<ClaimDto> result = claimService.getAllClaimsByType(ClaimDto.ClaimTypeEnum.HEALTH);
+
+    // Then: Verify correct claims are returned
+    assertThat(result).hasSize(2).containsExactly(healthClaimDto1, healthClaimDto2);
+    verify(claimRepository).findClaimByClaimType(HealthClaim.CLAIM_TYPE);
+  }
+
+  @Test
+  @DisplayName("Should return empty list when no claims of requested type exist")
+  void getAllClaimsByType_withNoClaimsOfType_shouldReturnEmptyList() {
+    // Given: No auto claims in the repository
+    when(claimRepository.findClaimByClaimType(AutoClaim.CLAIM_TYPE)).thenReturn(List.of());
+
+    // When: Requesting all auto claims
+    List<ClaimDto> result = claimService.getAllClaimsByType(ClaimDto.ClaimTypeEnum.AUTO);
+
+    // Then: Verify empty list is returned
+    assertThat(result).isEmpty();
+    verify(claimRepository).findClaimByClaimType(AutoClaim.CLAIM_TYPE);
+  }
+
+  @Test
+  @DisplayName("Should handle mixed claim types correctly by filtering only requested type")
+  void getAllClaimsByType_withMixedClaimTypes_shouldReturnOnlyRequestedType() {
+    // Given: Only auto claims in the repository (no other types)
+    AutoClaim autoClaim = new AutoClaim();
+    autoClaim.setId(1L);
+    autoClaim.setLicensePlate("AUTO001");
+
+    List<Claim> autoClaims = List.of(autoClaim);
+
+    AutoClaimDto autoClaimDto = new AutoClaimDto().id(1L).licensePlate("AUTO001");
+
+    when(claimRepository.findClaimByClaimType(AutoClaim.CLAIM_TYPE)).thenReturn(autoClaims);
+    when(claimMapper.toDto(autoClaim)).thenReturn(autoClaimDto);
+
+    // When: Requesting auto claims
+    List<ClaimDto> result = claimService.getAllClaimsByType(ClaimDto.ClaimTypeEnum.AUTO);
+
+    // Then: Verify only auto claims are returned
+    assertThat(result).hasSize(1);
+    assertThat(result.get(0)).isInstanceOf(AutoClaimDto.class);
+    assertThat(((AutoClaimDto) result.get(0)).getLicensePlate()).isEqualTo("AUTO001");
+  }
 
   private Policy createPolicy(Long id, PolicyType type, PolicyStatus status) {
     Policy policy = new Policy();

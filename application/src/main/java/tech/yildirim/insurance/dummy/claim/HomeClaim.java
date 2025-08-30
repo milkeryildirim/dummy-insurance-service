@@ -7,10 +7,12 @@ import lombok.Data;
 import lombok.EqualsAndHashCode;
 
 @Entity
-@DiscriminatorValue("HOME")
+@DiscriminatorValue(HomeClaim.CLAIM_TYPE)
 @Data
 @EqualsAndHashCode(callSuper = true)
 public class HomeClaim extends Claim {
+
+  public static final String CLAIM_TYPE = "HOME";
 
   private String typeOfDamage;
 

@@ -12,6 +12,7 @@ import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.orm.jpa.DataJpaTest;
 import org.springframework.boot.test.autoconfigure.orm.jpa.TestEntityManager;
+import org.springframework.test.context.ActiveProfiles;
 import tech.yildirim.insurance.dummy.common.Address;
 import tech.yildirim.insurance.dummy.customer.Customer;
 import tech.yildirim.insurance.dummy.policy.Policy;
@@ -20,6 +21,7 @@ import tech.yildirim.insurance.dummy.policy.PolicyType;
 
 @DataJpaTest
 @DisplayName("Claim Repository Integration Tests")
+@ActiveProfiles("test")
 class ClaimRepositoryTest {
 
   @Autowired private TestEntityManager testEntityManager;
@@ -154,5 +156,339 @@ class ClaimRepositoryTest {
     // Then: Exactly one claim should be found
     assertThat(claimsForHomePolicy).hasSize(1);
     assertThat(claimsForHomePolicy.getFirst().getClaimNumber()).isEqualTo("CLM-H1");
+  }
+
+  // ==================== FIND CLAIMS BY TYPE TESTS ====================
+
+  @Test
+  @DisplayName("Should find only auto claims when filtering by AUTO claim type")
+  void shouldFindClaimsByClaimType_Auto() {
+    // Given: Mixed claim types in the database
+    AutoClaim autoClaim1 = new AutoClaim();
+    autoClaim1.setClaimNumber("CLM-AUTO-001");
+    autoClaim1.setDescription("Car accident claim 1");
+    autoClaim1.setLicensePlate("F-AUTO-001");
+    autoClaim1.setVehicleVin("VIN12345678901");
+    autoClaim1.setDateOfIncident(LocalDate.now());
+    autoClaim1.setStatus(ClaimStatus.SUBMITTED);
+    autoClaim1.setPolicy(autoPolicy);
+
+    AutoClaim autoClaim2 = new AutoClaim();
+    autoClaim2.setClaimNumber("CLM-AUTO-002");
+    autoClaim2.setDescription("Car accident claim 2");
+    autoClaim2.setLicensePlate("F-AUTO-002");
+    autoClaim2.setVehicleVin("VIN12345678902");
+    autoClaim2.setDateOfIncident(LocalDate.now());
+    autoClaim2.setStatus(ClaimStatus.IN_REVIEW);
+    autoClaim2.setPolicy(autoPolicy);
+
+    HomeClaim homeClaim = new HomeClaim();
+    homeClaim.setClaimNumber("CLM-HOME-001");
+    homeClaim.setDescription("House fire claim");
+    homeClaim.setTypeOfDamage("Fire damage");
+    homeClaim.setDamagedItems("Furniture, electronics");
+    homeClaim.setDateOfIncident(LocalDate.now());
+    homeClaim.setStatus(ClaimStatus.SUBMITTED);
+    homeClaim.setPolicy(homePolicy);
+
+    testEntityManager.persist(autoClaim1);
+    testEntityManager.persist(autoClaim2);
+    testEntityManager.persist(homeClaim);
+    testEntityManager.flush();
+
+    // When: Filtering by AUTO claim type
+    List<Claim> autoClaims = claimRepository.findClaimByClaimType("AUTO");
+
+    // Then: Only auto claims should be returned
+    assertThat(autoClaims).hasSize(2).allMatch(AutoClaim.class::isInstance);
+    assertThat(autoClaims)
+        .extracting(Claim::getClaimNumber)
+        .containsExactlyInAnyOrder("CLM-AUTO-001", "CLM-AUTO-002");
+
+    // Verify specific auto claim properties
+    AutoClaim foundAutoClaim1 =
+        (AutoClaim)
+            autoClaims.stream()
+                .filter(claim -> "CLM-AUTO-001".equals(claim.getClaimNumber()))
+                .findFirst()
+                .orElseThrow();
+    assertThat(foundAutoClaim1.getLicensePlate()).isEqualTo("F-AUTO-001");
+    assertThat(foundAutoClaim1.getVehicleVin()).isEqualTo("VIN12345678901");
+  }
+
+  @Test
+  @DisplayName("Should find only home claims when filtering by HOME claim type")
+  void shouldFindClaimsByClaimType_Home() {
+    // Given: Mixed claim types in the database
+    AutoClaim autoClaim = new AutoClaim();
+    autoClaim.setClaimNumber("CLM-AUTO-001");
+    autoClaim.setDescription("Car accident claim");
+    autoClaim.setLicensePlate("F-AUTO-001");
+    autoClaim.setDateOfIncident(LocalDate.now());
+    autoClaim.setStatus(ClaimStatus.SUBMITTED);
+    autoClaim.setPolicy(autoPolicy);
+
+    HomeClaim homeClaim1 = new HomeClaim();
+    homeClaim1.setClaimNumber("CLM-HOME-001");
+    homeClaim1.setDescription("Water damage claim");
+    homeClaim1.setTypeOfDamage("Water damage");
+    homeClaim1.setDamagedItems("Kitchen cabinets, flooring");
+    homeClaim1.setDateOfIncident(LocalDate.now());
+    homeClaim1.setStatus(ClaimStatus.SUBMITTED);
+    homeClaim1.setPolicy(homePolicy);
+
+    HomeClaim homeClaim2 = new HomeClaim();
+    homeClaim2.setClaimNumber("CLM-HOME-002");
+    homeClaim2.setDescription("Storm damage claim");
+    homeClaim2.setTypeOfDamage("Storm damage");
+    homeClaim2.setDamagedItems("Roof, windows");
+    homeClaim2.setDateOfIncident(LocalDate.now());
+    homeClaim2.setStatus(ClaimStatus.IN_REVIEW);
+    homeClaim2.setPolicy(homePolicy);
+
+    testEntityManager.persist(autoClaim);
+    testEntityManager.persist(homeClaim1);
+    testEntityManager.persist(homeClaim2);
+    testEntityManager.flush();
+
+    // When: Filtering by HOME claim type
+    List<Claim> homeClaims = claimRepository.findClaimByClaimType("HOME");
+
+    // Then: Only home claims should be returned
+    assertThat(homeClaims).hasSize(2).allMatch(HomeClaim.class::isInstance);
+    assertThat(homeClaims)
+        .extracting(Claim::getClaimNumber)
+        .containsExactlyInAnyOrder("CLM-HOME-001", "CLM-HOME-002");
+
+    // Verify specific home claim properties
+    HomeClaim foundHomeClaim1 =
+        (HomeClaim)
+            homeClaims.stream()
+                .filter(claim -> "CLM-HOME-001".equals(claim.getClaimNumber()))
+                .findFirst()
+                .orElseThrow();
+    assertThat(foundHomeClaim1.getTypeOfDamage()).isEqualTo("Water damage");
+    assertThat(foundHomeClaim1.getDamagedItems()).isEqualTo("Kitchen cabinets, flooring");
+  }
+
+  @Test
+  @DisplayName("Should find only health claims when filtering by HEALTH claim type")
+  void shouldFindClaimsByClaimType_Health() {
+    // Given: Mixed claim types in the database including health claims
+    // First create a health policy
+    Policy healthPolicy =
+        new Policy(
+            null,
+            "POL-HEALTH-1",
+            LocalDate.now(),
+            LocalDate.now().plusYears(1),
+            PolicyType.HEALTH,
+            PolicyStatus.ACTIVE,
+            BigDecimal.ZERO,
+            autoPolicy.getCustomer(), // Use the same customer
+            null,
+            null,
+            null);
+    testEntityManager.persist(healthPolicy);
+
+    AutoClaim autoClaim = new AutoClaim();
+    autoClaim.setClaimNumber("CLM-AUTO-001");
+    autoClaim.setDescription("Car accident claim");
+    autoClaim.setLicensePlate("F-AUTO-001");
+    autoClaim.setDateOfIncident(LocalDate.now());
+    autoClaim.setStatus(ClaimStatus.SUBMITTED);
+    autoClaim.setPolicy(autoPolicy);
+
+    HealthClaim healthClaim1 = new HealthClaim();
+    healthClaim1.setClaimNumber("CLM-HEALTH-001");
+    healthClaim1.setDescription("Emergency room visit");
+    healthClaim1.setMedicalProvider("City General Hospital");
+    healthClaim1.setProcedureCode("CPT-99285");
+    healthClaim1.setDateOfIncident(LocalDate.now());
+    healthClaim1.setStatus(ClaimStatus.SUBMITTED);
+    healthClaim1.setPolicy(healthPolicy);
+
+    HealthClaim healthClaim2 = new HealthClaim();
+    healthClaim2.setClaimNumber("CLM-HEALTH-002");
+    healthClaim2.setDescription("Routine checkup");
+    healthClaim2.setMedicalProvider("Downtown Clinic");
+    healthClaim2.setProcedureCode("CPT-99213");
+    healthClaim2.setDateOfIncident(LocalDate.now());
+    healthClaim2.setStatus(ClaimStatus.APPROVED);
+    healthClaim2.setPolicy(healthPolicy);
+
+    testEntityManager.persist(autoClaim);
+    testEntityManager.persist(healthClaim1);
+    testEntityManager.persist(healthClaim2);
+    testEntityManager.flush();
+
+    // When: Filtering by HEALTH claim type
+    List<Claim> healthClaims = claimRepository.findClaimByClaimType("HEALTH");
+
+    // Then: Only health claims should be returned
+    assertThat(healthClaims).hasSize(2).allMatch(HealthClaim.class::isInstance);
+    assertThat(healthClaims)
+        .extracting(Claim::getClaimNumber)
+        .containsExactlyInAnyOrder("CLM-HEALTH-001", "CLM-HEALTH-002");
+
+    // Verify specific health claim properties
+    HealthClaim foundHealthClaim1 =
+        (HealthClaim)
+            healthClaims.stream()
+                .filter(claim -> "CLM-HEALTH-001".equals(claim.getClaimNumber()))
+                .findFirst()
+                .orElseThrow();
+    assertThat(foundHealthClaim1.getMedicalProvider()).isEqualTo("City General Hospital");
+    assertThat(foundHealthClaim1.getProcedureCode()).isEqualTo("CPT-99285");
+  }
+
+  @Test
+  @DisplayName("Should return empty list when no claims of specified type exist")
+  void shouldReturnEmptyListWhenNoClaimsOfTypeExist() {
+    // Given: Only auto claims in the database
+    AutoClaim autoClaim = new AutoClaim();
+    autoClaim.setClaimNumber("CLM-AUTO-001");
+    autoClaim.setDescription("Car accident claim");
+    autoClaim.setLicensePlate("F-AUTO-001");
+    autoClaim.setDateOfIncident(LocalDate.now());
+    autoClaim.setStatus(ClaimStatus.SUBMITTED);
+    autoClaim.setPolicy(autoPolicy);
+
+    testEntityManager.persist(autoClaim);
+    testEntityManager.flush();
+
+    // When: Filtering by HOME claim type (no home claims exist)
+    List<Claim> homeClaims = claimRepository.findClaimByClaimType("HOME");
+
+    // Then: Empty list should be returned
+    assertThat(homeClaims).isEmpty();
+
+    // When: Filtering by HEALTH claim type (no health claims exist)
+    List<Claim> healthClaims = claimRepository.findClaimByClaimType("HEALTH");
+
+    // Then: Empty list should be returned
+    assertThat(healthClaims).isEmpty();
+  }
+
+  @Test
+  @DisplayName("Should return empty list for invalid claim type")
+  void shouldReturnEmptyListForInvalidClaimType() {
+    // Given: Some claims in the database
+    AutoClaim autoClaim = new AutoClaim();
+    autoClaim.setClaimNumber("CLM-AUTO-001");
+    autoClaim.setDescription("Car accident claim");
+    autoClaim.setLicensePlate("F-AUTO-001");
+    autoClaim.setDateOfIncident(LocalDate.now());
+    autoClaim.setStatus(ClaimStatus.SUBMITTED);
+    autoClaim.setPolicy(autoPolicy);
+
+    testEntityManager.persist(autoClaim);
+    testEntityManager.flush();
+
+    // When: Filtering by invalid claim type
+    List<Claim> claims = claimRepository.findClaimByClaimType("INVALID_TYPE");
+
+    // Then: Empty list should be returned
+    assertThat(claims).isEmpty();
+  }
+
+  @Test
+  @DisplayName("Should correctly filter mixed claim types and return only requested type")
+  void shouldFilterMixedClaimTypesCorrectly() {
+    // Given: All three types of claims in the database
+    // Create health policy first
+    Policy healthPolicy =
+        new Policy(
+            null,
+            "POL-HEALTH-1",
+            LocalDate.now(),
+            LocalDate.now().plusYears(1),
+            PolicyType.HEALTH,
+            PolicyStatus.ACTIVE,
+            BigDecimal.ZERO,
+            autoPolicy.getCustomer(),
+            null,
+            null,
+            null);
+    testEntityManager.persist(healthPolicy);
+
+    AutoClaim autoClaim = new AutoClaim();
+    autoClaim.setClaimNumber("CLM-AUTO-001");
+    autoClaim.setDescription("Car accident claim");
+    autoClaim.setLicensePlate("F-AUTO-001");
+    autoClaim.setDateOfIncident(LocalDate.now());
+    autoClaim.setStatus(ClaimStatus.SUBMITTED);
+    autoClaim.setPolicy(autoPolicy);
+
+    HomeClaim homeClaim = new HomeClaim();
+    homeClaim.setClaimNumber("CLM-HOME-001");
+    homeClaim.setDescription("Fire damage claim");
+    homeClaim.setTypeOfDamage("Fire damage");
+    homeClaim.setDateOfIncident(LocalDate.now());
+    homeClaim.setStatus(ClaimStatus.SUBMITTED);
+    homeClaim.setPolicy(homePolicy);
+
+    HealthClaim healthClaim = new HealthClaim();
+    healthClaim.setClaimNumber("CLM-HEALTH-001");
+    healthClaim.setDescription("Medical treatment claim");
+    healthClaim.setMedicalProvider("Hospital");
+    healthClaim.setDateOfIncident(LocalDate.now());
+    healthClaim.setStatus(ClaimStatus.SUBMITTED);
+    healthClaim.setPolicy(healthPolicy);
+
+    testEntityManager.persist(autoClaim);
+    testEntityManager.persist(homeClaim);
+    testEntityManager.persist(healthClaim);
+    testEntityManager.flush();
+
+    // When & Then: Test each filter separately
+    List<Claim> autoResults = claimRepository.findClaimByClaimType("AUTO");
+    assertThat(autoResults).hasSize(1);
+    assertThat(autoResults.get(0)).isInstanceOf(AutoClaim.class);
+    assertThat(autoResults.get(0).getClaimNumber()).isEqualTo("CLM-AUTO-001");
+
+    List<Claim> homeResults = claimRepository.findClaimByClaimType("HOME");
+    assertThat(homeResults).hasSize(1);
+    assertThat(homeResults.get(0)).isInstanceOf(HomeClaim.class);
+    assertThat(homeResults.get(0).getClaimNumber()).isEqualTo("CLM-HOME-001");
+
+    List<Claim> healthResults = claimRepository.findClaimByClaimType("HEALTH");
+    assertThat(healthResults).hasSize(1);
+    assertThat(healthResults.get(0)).isInstanceOf(HealthClaim.class);
+    assertThat(healthResults.get(0).getClaimNumber()).isEqualTo("CLM-HEALTH-001");
+
+    // Verify that each result contains only the correct type
+    assertThat(autoResults)
+        .noneMatch(claim -> claim instanceof HomeClaim || claim instanceof HealthClaim);
+    assertThat(homeResults)
+        .noneMatch(claim -> claim instanceof AutoClaim || claim instanceof HealthClaim);
+    assertThat(healthResults)
+        .noneMatch(claim -> claim instanceof AutoClaim || claim instanceof HomeClaim);
+  }
+
+  @Test
+  @DisplayName("Should handle case-sensitive claim type filtering correctly")
+  void shouldHandleCaseSensitiveClaimTypeFiltering() {
+    // Given: An auto claim in the database
+    AutoClaim autoClaim = new AutoClaim();
+    autoClaim.setClaimNumber("CLM-AUTO-001");
+    autoClaim.setDescription("Car accident claim");
+    autoClaim.setLicensePlate("F-AUTO-001");
+    autoClaim.setDateOfIncident(LocalDate.now());
+    autoClaim.setStatus(ClaimStatus.SUBMITTED);
+    autoClaim.setPolicy(autoPolicy);
+
+    testEntityManager.persist(autoClaim);
+    testEntityManager.flush();
+
+    // When & Then: Test different case variations
+    List<Claim> upperCaseResults = claimRepository.findClaimByClaimType("AUTO");
+    assertThat(upperCaseResults).hasSize(1);
+
+    List<Claim> lowerCaseResults = claimRepository.findClaimByClaimType("auto");
+    assertThat(lowerCaseResults).isEmpty(); // Should be case-sensitive
+
+    List<Claim> mixedCaseResults = claimRepository.findClaimByClaimType("Auto");
+    assertThat(mixedCaseResults).isEmpty(); // Should be case-sensitive
   }
 }

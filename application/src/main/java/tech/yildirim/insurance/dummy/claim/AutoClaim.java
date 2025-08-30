@@ -7,10 +7,12 @@ import lombok.Data;
 import lombok.EqualsAndHashCode;
 
 @Entity
-@DiscriminatorValue("AUTO")
+@DiscriminatorValue(AutoClaim.CLAIM_TYPE)
 @Data
 @EqualsAndHashCode(callSuper = true)
 public class AutoClaim extends Claim {
+
+  public static final String CLAIM_TYPE = "AUTO";
 
   @NotBlank(message = "License plate cannot be blank for an auto claim.")
   private String licensePlate;

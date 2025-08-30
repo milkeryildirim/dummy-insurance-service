@@ -49,4 +49,20 @@ public interface ClaimService {
    * @return The updated claim DTO.
    */
   ClaimDto updateClaim(Long claimId, ClaimDto claimDto);
+
+  /**
+   * Deletes a claim by its ID.
+   *
+   * @param claimId The ID of the claim to delete.
+   * @throws ResourceNotFoundException if the claim is not found.
+   */
+  void deleteClaim(Long claimId);
+
+  /**
+   * Retrieves all claims of a specific type.
+   *
+   * @param claimType The type of claims to retrieve (AUTO, HOME, HEALTH).
+   * @return A list of claim DTOs of the specified type.
+   */
+  List<ClaimDto> getAllClaimsByType(ClaimDto.ClaimTypeEnum claimType);
 }

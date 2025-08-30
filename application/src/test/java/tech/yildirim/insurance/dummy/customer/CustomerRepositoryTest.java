@@ -10,10 +10,12 @@ import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.orm.jpa.DataJpaTest;
 import org.springframework.boot.test.autoconfigure.orm.jpa.TestEntityManager;
+import org.springframework.test.context.ActiveProfiles;
 import tech.yildirim.insurance.dummy.common.Address;
 
 @DataJpaTest
 @DisplayName("Customer Repository Integration Tests")
+@ActiveProfiles("test")
 class CustomerRepositoryTest {
 
   @Autowired private TestEntityManager testEntityManager;

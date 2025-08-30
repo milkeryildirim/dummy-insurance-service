@@ -11,10 +11,13 @@ import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.orm.jpa.DataJpaTest;
 import org.springframework.boot.test.autoconfigure.orm.jpa.TestEntityManager;
+import org.springframework.test.context.ActiveProfiles;
 import tech.yildirim.insurance.dummy.common.Address;
 import tech.yildirim.insurance.dummy.customer.Customer;
 
 @DataJpaTest
+@ActiveProfiles("test")
+@DisplayName("Policy Repository Integration Tests")
 class PolicyRepositoryTest {
 
   @Autowired private TestEntityManager testEntityManager;

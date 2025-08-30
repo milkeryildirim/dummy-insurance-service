@@ -26,6 +26,43 @@ future content.
 
 ---
 
+## Project Structure
+
+This is a **multi-module Maven project** with a clear separation of concerns:
+
+```
+dummy-insurance-service/
+├── contract/                    # API Contract Module
+│   ├── src/main/resources/api/
+│   │   ├── openapi.yaml        # Main OpenAPI specification
+│   │   ├── components/         # Reusable API components
+│   │   └── paths/              # Individual endpoint definitions
+│   └── pom.xml
+├── application/                 # Main Application Module
+│   ├── src/main/java/tech/yildirim/insurance/dummy/
+│   │   ├── agency/             # Agency management
+│   │   ├── claim/              # Claims processing (Auto, Home, Health)
+│   │   ├── common/             # Shared utilities and exception handling
+│   │   ├── customer/           # Customer management
+│   │   ├── employee/           # Employee management
+│   │   ├── policy/             # Policy management
+│   │   └── InsuranceApplication.java
+│   ├── src/main/resources/
+│   │   ├── application.yaml    # Application configuration
+│   │   └── data.sql           # Sample data initialization
+│   └── pom.xml
+└── pom.xml                     # Parent POM
+```
+
+### Module Overview
+
+- **`contract`**: Contains the OpenAPI 3.0 specification files that define the API contract. This
+  module is published as a separate artifact to GitHub Packages for reuse by other services.
+- **`application`**: The main Spring Boot application that implements the API contract defined in
+  the contract module.
+
+---
+
 ## Technologies Used
 
 * **Framework**: Spring Boot 3.5.4
@@ -37,6 +74,33 @@ future content.
 * **Mapping**: MapStruct
 * **Boilerplate Reduction**: Lombok
 * **Testing**: JUnit 5, Mockito, AssertJ, MockMvc
+* **CI/CD**: GitHub Actions (Maven publish workflow)
+
+---
+
+## API Overview
+
+The API provides comprehensive insurance management capabilities across multiple domains:
+
+### Core Entities
+
+- **Customers**: Customer registration, profile management, and search functionality
+- **Employees**: Employee management with role-based access (Manager, Claims Adjuster, Underwriter)
+- **Agencies**: Insurance agency management and agent assignments
+- **Policies**: Policy creation, management, and customer policy associations
+- **Claims**: Multi-type claims processing (Auto, Home, Health) with adjuster assignment
+
+### Available Endpoints
+
+| Domain            | Endpoints                                                                      | Description                  |
+|-------------------|--------------------------------------------------------------------------------|------------------------------|
+| **Customers**     | `/customers`, `/customers/{id}`, `/customers/search`                           | CRUD operations and search   |
+| **Policies**      | `/policies`, `/policies/{id}`, `/policies/search`                              | Policy management and search |
+| **Auto Claims**   | `/auto-claims`, `/auto-claims/{id}`, `/auto-claims/{id}/assign-adjuster`       | Auto insurance claims        |
+| **Home Claims**   | `/home-claims`, `/home-claims/{id}`, `/home-claims/{id}/assign-adjuster`       | Home insurance claims        |
+| **Health Claims** | `/health-claims`, `/health-claims/{id}`, `/health-claims/{id}/assign-adjuster` | Health insurance claims      |
+| **Employees**     | `/employees`, `/employees/{id}`                                                | Employee management          |
+| **Agencies**      | `/agencies`, `/agencies/{id}`                                                  | Agency management            |
 
 ---
 
@@ -47,17 +111,30 @@ This project was built with a strong emphasis on maintainability, scalability, a
 ### 1. API-First Approach
 
 The API contract is the single source of truth. All data transfer objects (DTOs) and controller
-interfaces are generated from a modular OpenAPI 3 specification located in
+interfaces are generated from a modular OpenAPI 3 specification located in the `contract` module at
 `/src/main/resources/api/`. This ensures the implementation always adheres to the documented
 contract.
 
-### 2. Packaging by Feature
+### 2. Multi-Module Architecture
+
+The project is split into two Maven modules:
+
+- **Contract Module**: Contains only the OpenAPI specifications, published as a reusable artifact
+- **Application Module**: Contains the business logic implementation that depends on the contract
+
+This separation enables:
+
+- Independent versioning of API contracts
+- Reuse of contracts by external services
+- Clear separation between API design and implementation
+
+### 3. Packaging by Feature
 
 Instead of traditional packaging-by-layer (e.g., `controller`, `service`), the project is organized
 by functional features (e.g., `customer`, `policy`, `claim`). This provides high cohesion and
 modularity, making the codebase easier to navigate and scale.
 
-### 3. Layered Architecture
+### 4. Layered Architecture
 
 The application follows a classic three-layer architecture within each feature package:
 
@@ -66,20 +143,20 @@ The application follows a classic three-layer architecture within each feature p
 * **Service Layer**: Contains all business logic. It does not know about HTTP.
 * **Repository Layer**: Handles data persistence using Spring Data JPA.
 
-### 4. DTO Pattern (No Entities in Controllers)
+### 5. DTO Pattern (No Entities in Controllers)
 
 JPA entities are never exposed to the API layer. All communication with the outside world is done
 through DTOs generated from the OpenAPI specification. This decouples the API contract from the
 internal database schema. **MapStruct** is used for efficient and type-safe mapping between entities
 and DTOs.
 
-### 5. Global Exception Handling
+### 6. Global Exception Handling
 
 A centralized `GlobalExceptionHandler` (`@RestControllerAdvice`) is implemented to provide
 consistent, clean, and structured JSON error responses for the entire application, handling
 validation errors (400) and resource-not-found errors (404) uniformly.
 
-### 6. Comprehensive Testing
+### 7. Comprehensive Testing
 
 Each feature is accompanied by a full suite of tests covering all layers:
 
@@ -110,7 +187,7 @@ This is a multi-module Maven project. All commands should be run from the root d
    ```sh
    cd dummy-insurance-service
    ```
-3. Build the project and run all tests. This will also generate the OpenAPI sources.
+3. Build the project and run all tests. This will also generate the OpenAPI sources:
    ```sh
    mvn clean install
    ```
@@ -122,12 +199,27 @@ This is a multi-module Maven project. All commands should be run from the root d
 The application will start on `http://localhost:8080`. The `-pl application` flag specifically tells
 Maven to run the `application` module.
 
+### Alternative: Running the JAR
+
+After building, you can also run the application directly from the generated JAR:
+
+```sh
+java -jar application/target/dummy-insurance-application-0.0.2-SNAPSHOT.jar
+```
+
 ### How to Run Tests
 
 To run all automated tests for all modules, execute the following command from the project root:
 
 ```sh
 mvn test
+```
+
+To run tests for a specific module:
+
+```sh
+mvn test -pl application
+mvn test -pl contract
 ```
 
 ---
@@ -139,12 +231,25 @@ Once the application is running, the API documentation is available via Swagger 
 * **Swagger UI**: `http://localhost:8080/swagger-ui/index.html`
 * **OpenAPI Specification**: `http://localhost:8080/api-docs`
 
-The H2 in-memory database console is also available for debugging and data inspection.
+### Sample Data
+
+The application comes with pre-loaded sample data including:
+
+- 3 customers with German addresses and encrypted passwords
+- 4 employees with different roles (Manager, Claims Adjusters, Underwriter)
+- Multiple agencies and policies
+- Sample claims data across all claim types
+
+### Database Access
+
+The H2 in-memory database console is available for debugging and data inspection:
 
 * **H2 Console**: `http://localhost:8080/h2-console`
     * JDBC URL: `jdbc:h2:mem:insurancedb`
     * Username: `sa`
     * Password: (leave blank)
+
+---
 
 ## API-First Design with a Separate Contract Module
 
@@ -157,7 +262,8 @@ To facilitate sharing and reuse, the API contract is managed in a dedicated `con
   project. The main `application` module includes this `contract` module as a standard Maven
   dependency.
 
-* The `contract` artifact is automatically versioned and deployed to **GitHub Packages**.
+* The `contract` artifact is automatically versioned and deployed to **GitHub Packages** via GitHub
+  Actions.
 
 This separation allows other third-party
 services to easily use the contract artifact to generate their own clients or perform interface
@@ -178,3 +284,42 @@ sequenceDiagram
     App->>+Dev: 5. Developer implements the generated API Interface
     Dev-->>-App: Business logic is complete
 ```
+
+---
+
+## Continuous Integration
+
+The project includes a GitHub Actions workflow (`maven-publish.yml`) that automatically:
+
+- Builds and tests the project on every push to the main branch
+- Publishes the contract artifact to GitHub Packages
+- Uses Java 21 and Maven for the build process
+
+To use the published contract artifact in other projects, add this dependency to your `pom.xml`:
+
+```xml
+
+<dependency>
+  <groupId>tech.yildirim</groupId>
+  <artifactId>dummy-insurance-api-contract</artifactId>
+  <version>0.0.2-SNAPSHOT</version>
+</dependency>
+```
+
+---
+
+## Contributing
+
+This project serves as a stable baseline for educational content and demonstrations. When
+contributing:
+
+1. Follow the existing architectural patterns
+2. Maintain comprehensive test coverage
+3. Update the OpenAPI specification before implementing new endpoints
+4. Ensure all tests pass before submitting changes
+
+---
+
+## License
+
+This project is intended for educational and demonstration purposes.

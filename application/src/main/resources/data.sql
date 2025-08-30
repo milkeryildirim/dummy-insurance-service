@@ -18,16 +18,16 @@ INSERT INTO customers (id, first_name, last_name, date_of_birth, street_and_hous
                        postal_code, city, country, password, email, created_at, updated_at)
 VALUES (1, 'Max', 'Mustermann', '1985-03-15', 'Musterstraße 1A',
         '10115', 'Berlin', 'Deutschland',
-        '$2a$10$tZNo.pOFbWkCCG4WqD/nAO/BmxDi2/859a0dFrQKo.i2n2.i8SC/y',
+        'testPassword123',
         'max.mustermann@example.com', CURRENT_TIMESTAMP,
         CURRENT_TIMESTAMP),
        (2, 'Erika', 'Mustermann', '1992-07-22', 'Beispielweg 25',
         '80331', 'München', 'Deutschland',
-        '$2a$10$r6g1qY09j8L.P8e.qFzMweLqO6m/hO3iN.d/l/9bU.e/mJ6h.qM6G',
+        'testPassword456',
         'erika.mustermann@example.com', CURRENT_TIMESTAMP,
         CURRENT_TIMESTAMP),
        (3, 'Klaus', 'Müller', '1978-11-02', 'Hauptplatz 10', '20095',
-        'Hamburg', 'Deutschland', '$2a$10$fO8Yg.A.L/jJ3eH.pW5c5uS.F1b.qP2c.aH4nI5b.jE7a.fE9c.dE',
+        'Hamburg', 'Deutschland', 'testPassword789',
         'k.mueller@example.de',
         CURRENT_TIMESTAMP, CURRENT_TIMESTAMP);
 

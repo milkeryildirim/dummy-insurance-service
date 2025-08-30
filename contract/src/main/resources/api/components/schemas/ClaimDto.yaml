@@ -15,7 +15,7 @@ properties:
   claimType:
     type: string
     description: "The type of claim"
-    enum: [ auto, home, health ]
+    enum: [ AutoClaimDto, HealthClaimDto, HomeClaimDto ]
   policyId:
     type: integer
     format: int64

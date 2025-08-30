@@ -23,6 +23,7 @@ import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 import tech.yildirim.insurance.api.generated.model.AutoClaimDto;
 import tech.yildirim.insurance.api.generated.model.ClaimDto;
+import tech.yildirim.insurance.api.generated.model.ClaimDto.ClaimTypeEnum;
 import tech.yildirim.insurance.api.generated.model.HealthClaimDto;
 import tech.yildirim.insurance.api.generated.model.HomeClaimDto;
 import tech.yildirim.insurance.dummy.common.ResourceNotFoundException;
@@ -884,7 +885,7 @@ class ClaimServiceImplTest {
     when(claimMapper.toDto(autoClaim2)).thenReturn(autoClaimDto2);
 
     // When: Requesting all auto claims
-    List<ClaimDto> result = claimService.getAllClaimsByType(ClaimDto.ClaimTypeEnum.AUTO);
+    List<ClaimDto> result = claimService.getAllClaimsByType(ClaimTypeEnum.AUTO_CLAIM_DTO);
 
     // Then: Verify correct claims are returned
     assertThat(result).hasSize(2).containsExactly(autoClaimDto1, autoClaimDto2);
@@ -918,7 +919,7 @@ class ClaimServiceImplTest {
     when(claimMapper.toDto(homeClaim2)).thenReturn(homeClaimDto2);
 
     // When: Requesting all home claims
-    List<ClaimDto> result = claimService.getAllClaimsByType(ClaimDto.ClaimTypeEnum.HOME);
+    List<ClaimDto> result = claimService.getAllClaimsByType(ClaimTypeEnum.HOME_CLAIM_DTO);
 
     // Then: Verify correct claims are returned
     assertThat(result).hasSize(2).containsExactly(homeClaimDto1, homeClaimDto2);
@@ -955,7 +956,7 @@ class ClaimServiceImplTest {
     when(claimMapper.toDto(healthClaim2)).thenReturn(healthClaimDto2);
 
     // When: Requesting all health claims
-    List<ClaimDto> result = claimService.getAllClaimsByType(ClaimDto.ClaimTypeEnum.HEALTH);
+    List<ClaimDto> result = claimService.getAllClaimsByType(ClaimTypeEnum.HEALTH_CLAIM_DTO);
 
     // Then: Verify correct claims are returned
     assertThat(result).hasSize(2).containsExactly(healthClaimDto1, healthClaimDto2);
@@ -969,7 +970,7 @@ class ClaimServiceImplTest {
     when(claimRepository.findClaimByClaimType(AutoClaim.CLAIM_TYPE)).thenReturn(List.of());
 
     // When: Requesting all auto claims
-    List<ClaimDto> result = claimService.getAllClaimsByType(ClaimDto.ClaimTypeEnum.AUTO);
+    List<ClaimDto> result = claimService.getAllClaimsByType(ClaimTypeEnum.AUTO_CLAIM_DTO);
 
     // Then: Verify empty list is returned
     assertThat(result).isEmpty();
@@ -992,7 +993,7 @@ class ClaimServiceImplTest {
     when(claimMapper.toDto(autoClaim)).thenReturn(autoClaimDto);
 
     // When: Requesting auto claims
-    List<ClaimDto> result = claimService.getAllClaimsByType(ClaimDto.ClaimTypeEnum.AUTO);
+    List<ClaimDto> result = claimService.getAllClaimsByType(ClaimTypeEnum.AUTO_CLAIM_DTO);
 
     // Then: Verify only auto claims are returned
     assertThat(result).hasSize(1);

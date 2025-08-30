@@ -1,8 +1,6 @@
 package tech.yildirim.insurance.dummy.claim;
 
-import static tech.yildirim.insurance.api.generated.model.ClaimDto.ClaimTypeEnum.AUTO;
-import static tech.yildirim.insurance.api.generated.model.ClaimDto.ClaimTypeEnum.HEALTH;
-import static tech.yildirim.insurance.api.generated.model.ClaimDto.ClaimTypeEnum.HOME;
+
 
 import java.util.List;
 import java.util.Optional;
@@ -13,6 +11,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import tech.yildirim.insurance.api.generated.model.AutoClaimDto;
 import tech.yildirim.insurance.api.generated.model.ClaimDto;
+import tech.yildirim.insurance.api.generated.model.ClaimDto.ClaimTypeEnum;
 import tech.yildirim.insurance.api.generated.model.HealthClaimDto;
 import tech.yildirim.insurance.api.generated.model.HomeClaimDto;
 import tech.yildirim.insurance.dummy.common.ResourceNotFoundException;
@@ -213,9 +212,9 @@ public class ClaimServiceImpl implements ClaimService {
 
     String cType =
         switch (claimType) {
-          case AUTO -> AutoClaim.CLAIM_TYPE;
-          case HOME -> HomeClaim.CLAIM_TYPE;
-          case HEALTH -> HealthClaim.CLAIM_TYPE;
+          case ClaimTypeEnum.AUTO_CLAIM_DTO -> AutoClaim.CLAIM_TYPE;
+          case ClaimTypeEnum.HOME_CLAIM_DTO -> HomeClaim.CLAIM_TYPE;
+          case ClaimTypeEnum.HEALTH_CLAIM_DTO -> HealthClaim.CLAIM_TYPE;
         };
 
     List<Claim> claims = claimRepository.findClaimByClaimType(cType);

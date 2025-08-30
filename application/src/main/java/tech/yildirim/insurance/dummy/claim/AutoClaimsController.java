@@ -9,6 +9,8 @@ import org.springframework.web.bind.annotation.RestController;
 import tech.yildirim.insurance.api.generated.controller.AutoClaimsApi;
 import tech.yildirim.insurance.api.generated.model.AssignAdjusterRequestDto;
 import tech.yildirim.insurance.api.generated.model.AutoClaimDto;
+import tech.yildirim.insurance.api.generated.model.ClaimDto;
+import tech.yildirim.insurance.api.generated.model.ClaimDto.ClaimTypeEnum;
 
 /**
  * REST Controller for managing auto claims. Implements the generated {@link AutoClaimsApi}
@@ -42,19 +44,28 @@ public class AutoClaimsController implements AutoClaimsApi {
     log.info(
         "REST request to get all auto claims - page: {}, size: {}, status: {}", page, size, status);
 
-    // TODO: Implement proper pagination and status filtering when service supports it
-    // For now, get all claims and filter auto claims manually
     try {
-      // This is a simplified implementation - in a real scenario, you would have a service method
-      // that specifically retrieves auto claims with pagination and filtering
-      log.warn("Pagination and status filtering not yet fully implemented for auto claims");
+      // Get all auto claims using the service method
+      List<ClaimDto> claims = claimService.getAllClaimsByType(ClaimTypeEnum.AUTO_CLAIM_DTO);
 
-      // Return empty list for now - this should be replaced with actual service call
-      // when getAllAutoClaims method is available in ClaimService
-      return ResponseEntity.ok(List.of());
-    } catch (Exception e) {
-      log.error("Error retrieving auto claims: {}", e.getMessage());
-      return ResponseEntity.ok(List.of());
+      // Cast to AutoClaimDto list (polymorphic relationship ensures this is safe)
+      List<AutoClaimDto> autoClaims = claims.stream().map(AutoClaimDto.class::cast).toList();
+
+      // TODO: Implement pagination and status filtering
+      // For now, return all auto claims without pagination or status filtering
+      if (page != null || size != null || status != null) {
+        log.warn(
+            "Pagination (page: {}, size: {}) and status filtering (status: {}) not yet implemented",
+            page,
+            size,
+            status);
+      }
+
+      log.info("Retrieved {} auto claims", autoClaims.size());
+      return ResponseEntity.ok(autoClaims);
+    } catch (RuntimeException e) {
+      log.error("Error retrieving auto claims: {}", e.getMessage(), e);
+      throw e;
     }
   }
 
@@ -90,11 +101,14 @@ public class AutoClaimsController implements AutoClaimsApi {
                 return ResponseEntity.notFound().<Void>build();
               }
 
-              // TODO: Implement delete operation in ClaimService
-              log.info(
-                  "Auto claim with id: {} would be deleted (delete method not yet implemented in service)",
-                  id);
-              return ResponseEntity.noContent().<Void>build();
+              try {
+                claimService.deleteClaim(id);
+                log.info("Successfully deleted auto claim with id: {}", id);
+                return ResponseEntity.noContent().<Void>build();
+              } catch (Exception e) {
+                log.error("Error deleting auto claim with id: {}: {}", id, e.getMessage(), e);
+                return ResponseEntity.internalServerError().<Void>build();
+              }
             })
         .orElseGet(
             () -> {

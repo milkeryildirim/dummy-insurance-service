@@ -1,6 +1,6 @@
 get:
   tags:
-    - Auto Claims
+    - AutoClaims
   summary: "Get auto claims by policy ID"
   operationId: "getAutoClaimsByPolicyId"
   parameters:

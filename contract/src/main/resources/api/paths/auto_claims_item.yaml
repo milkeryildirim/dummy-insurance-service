@@ -1,6 +1,6 @@
 get:
   tags:
-    - Auto Claims
+    - AutoClaims
   summary: "Find auto claim by ID"
   operationId: "getAutoClaimById"
   parameters:
@@ -17,7 +17,7 @@ get:
 
 put:
   tags:
-    - Auto Claims
+    - AutoClaims
   summary: "Update an existing auto claim"
   operationId: "updateAutoClaim"
   parameters:
@@ -43,7 +43,7 @@ put:
 
 delete:
   tags:
-    - Auto Claims
+    - AutoClaims
   summary: "Delete an auto claim"
   operationId: "deleteAutoClaim"
   parameters:

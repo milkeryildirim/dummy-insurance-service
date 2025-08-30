@@ -1,6 +1,6 @@
 get:
   tags:
-    - Home Claims
+    - HomeClaims
   summary: "Get all home claims"
   operationId: "getAllHomeClaims"
   parameters:
@@ -37,7 +37,7 @@ get:
 
 post:
   tags:
-    - Home Claims
+    - HomeClaims
   summary: "Create a new home claim"
   operationId: "createHomeClaim"
   requestBody:

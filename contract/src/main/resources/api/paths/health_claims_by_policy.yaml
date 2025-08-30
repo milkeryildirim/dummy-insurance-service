@@ -1,6 +1,6 @@
 get:
   tags:
-    - Health Claims
+    - HealthClaims
   summary: "Get health claims by policy ID"
   operationId: "getHealthClaimsByPolicyId"
   parameters:

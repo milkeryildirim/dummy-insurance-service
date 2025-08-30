@@ -1,6 +1,6 @@
 get:
   tags:
-    - Auto Claims
+    - AutoClaims
   summary: "Get all auto claims"
   operationId: "getAllAutoClaims"
   parameters:
@@ -37,7 +37,7 @@ get:
 
 post:
   tags:
-    - Auto Claims
+    - AutoClaims
   summary: "Create a new auto claim"
   operationId: "createAutoClaim"
   requestBody:

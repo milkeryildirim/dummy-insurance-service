@@ -1,6 +1,6 @@
 get:
   tags:
-    - Health Claims
+    - HealthClaims
   summary: "Find health claim by ID"
   operationId: "getHealthClaimById"
   parameters:
@@ -17,7 +17,7 @@ get:
 
 put:
   tags:
-    - Health Claims
+    - HealthClaims
   summary: "Update an existing health claim"
   operationId: "updateHealthClaim"
   parameters:
@@ -43,7 +43,7 @@ put:
 
 delete:
   tags:
-    - Health Claims
+    - HealthClaims
   summary: "Delete a health claim"
   operationId: "deleteHealthClaim"
   parameters:

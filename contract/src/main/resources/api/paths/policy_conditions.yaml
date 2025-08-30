@@ -1,6 +1,6 @@
 get:
   tags:
-    - Policy Conditions
+    - PolicyConditions
   summary: "Get the current set of policy conditions"
   operationId: "getPolicyConditions"
   responses:
@@ -12,7 +12,7 @@ get:
             $ref: '../components/schemas/PolicyConditionsDto.yaml'
 put:
   tags:
-    - Policy Conditions
+    - PolicyConditions
   summary: "Update the set of policy conditions"
   description: "Updates the single set of policy conditions for the entire system. This is typically an admin-only operation"
   operationId: "updatePolicyConditions"

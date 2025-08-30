@@ -1,6 +1,6 @@
 get:
   tags:
-    - Health Claims
+    - HealthClaims
   summary: "Get all health claims"
   operationId: "getAllHealthClaims"
   parameters:
@@ -37,7 +37,7 @@ get:
 
 post:
   tags:
-    - Health Claims
+    - HealthClaims
   summary: "Create a new health claim"
   operationId: "createHealthClaim"
   requestBody:

@@ -1,6 +1,6 @@
 get:
   tags:
-    - Home Claims
+    - HomeClaims
   summary: "Find home claim by ID"
   operationId: "getHomeClaimById"
   parameters:
@@ -17,7 +17,7 @@ get:
 
 put:
   tags:
-    - Home Claims
+    - HomeClaims
   summary: "Update an existing home claim"
   operationId: "updateHomeClaim"
   parameters:

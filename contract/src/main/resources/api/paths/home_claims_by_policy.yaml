@@ -1,6 +1,6 @@
 get:
   tags:
-    - Home Claims
+    - HomeClaims
   summary: "Get home claims by policy ID"
   operationId: "getHomeClaimsByPolicyId"
   parameters:

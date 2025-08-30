@@ -1,6 +1,6 @@
 put:
   tags:
-    - Health Claims
+    - HealthClaims
   summary: "Assign an adjuster to a health claim"
   operationId: "assignAdjusterToHealthClaim"
   parameters:

@@ -1,6 +1,6 @@
 put:
   tags:
-    - Auto Claims
+    - AutoClaims
   summary: "Assign an adjuster to an auto claim"
   operationId: "assignAdjusterToAutoClaim"
   parameters:

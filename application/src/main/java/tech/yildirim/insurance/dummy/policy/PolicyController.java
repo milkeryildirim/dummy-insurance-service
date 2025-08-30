@@ -7,7 +7,12 @@ import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.RestController;
 import tech.yildirim.insurance.api.generated.controller.PoliciesApi;
+import tech.yildirim.insurance.api.generated.model.AutoClaimDto;
+import tech.yildirim.insurance.api.generated.model.ClaimDto;
+import tech.yildirim.insurance.api.generated.model.HealthClaimDto;
+import tech.yildirim.insurance.api.generated.model.HomeClaimDto;
 import tech.yildirim.insurance.api.generated.model.PolicyDto;
+import tech.yildirim.insurance.dummy.claim.ClaimService;
 
 /**
  * REST Controller for managing policies. Implements the generated {@link PoliciesApi} interface.
@@ -18,6 +23,7 @@ import tech.yildirim.insurance.api.generated.model.PolicyDto;
 public class PolicyController implements PoliciesApi {
 
   private final PolicyService policyService;
+  private final ClaimService claimService;
 
   @Override
   public ResponseEntity<PolicyDto> createPolicy(PolicyDto policyDto) {
@@ -84,5 +90,53 @@ public class PolicyController implements PoliciesApi {
               log.warn("Failed to update. Policy with id: {} not found.", id);
               return ResponseEntity.notFound().build();
             });
+  }
+
+  @Override
+  public ResponseEntity<List<AutoClaimDto>> getAutoClaimsByPolicyId(
+      Long policyId, Integer page, Integer size, String status) {
+    log.info("REST request to get auto claims for policy id: {}", policyId);
+
+    List<ClaimDto> allClaims = claimService.findClaimsByPolicyId(policyId);
+    List<AutoClaimDto> autoClaims =
+        allClaims.stream()
+            .filter(AutoClaimDto.class::isInstance)
+            .map(AutoClaimDto.class::cast)
+            .toList();
+
+    log.debug("Found {} auto claims for policy id: {}", autoClaims.size(), policyId);
+    return ResponseEntity.ok(autoClaims);
+  }
+
+  @Override
+  public ResponseEntity<List<HomeClaimDto>> getHomeClaimsByPolicyId(
+      Long policyId, Integer page, Integer size, String status) {
+    log.info("REST request to get home claims for policy id: {}", policyId);
+
+    List<ClaimDto> allClaims = claimService.findClaimsByPolicyId(policyId);
+    List<HomeClaimDto> homeClaims =
+        allClaims.stream()
+            .filter(HomeClaimDto.class::isInstance)
+            .map(HomeClaimDto.class::cast)
+            .toList();
+
+    log.debug("Found {} home claims for policy id: {}", homeClaims.size(), policyId);
+    return ResponseEntity.ok(homeClaims);
+  }
+
+  @Override
+  public ResponseEntity<List<HealthClaimDto>> getHealthClaimsByPolicyId(
+      Long policyId, Integer page, Integer size, String status) {
+    log.info("REST request to get health claims for policy id: {}", policyId);
+
+    List<ClaimDto> allClaims = claimService.findClaimsByPolicyId(policyId);
+    List<HealthClaimDto> healthClaims =
+        allClaims.stream()
+            .filter(HealthClaimDto.class::isInstance)
+            .map(HealthClaimDto.class::cast)
+            .toList();
+
+    log.debug("Found {} health claims for policy id: {}", healthClaims.size(), policyId);
+    return ResponseEntity.ok(healthClaims);
   }
 }

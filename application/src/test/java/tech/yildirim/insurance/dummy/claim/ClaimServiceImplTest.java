@@ -498,6 +498,266 @@ class ClaimServiceImplTest {
     assertThat(exception.getMessage()).contains("is not a CLAIMS_ADJUSTER");
   }
 
+  // ==================== UPDATE CLAIM TESTS ====================
+
+  @Test
+  @DisplayName("Should update AutoClaim successfully when valid data is provided")
+  void updateClaim_withValidAutoClaimDto_shouldUpdateAutoClaim() {
+    // Given: An existing AutoClaim and updated AutoClaimDto
+    long claimId = 1L;
+
+    AutoClaim existingClaim = new AutoClaim();
+    existingClaim.setId(claimId);
+    existingClaim.setDescription("Original description");
+    existingClaim.setLicensePlate("OLD123");
+    existingClaim.setVehicleVin("OLD_VIN");
+
+    AutoClaimDto updateDto =
+        new AutoClaimDto()
+            .id(claimId)
+            .description("Updated description")
+            .dateOfIncident(LocalDate.now())
+            .licensePlate("NEW456")
+            .vehicleVin("NEW_VIN")
+            .accidentLocation("Updated location");
+
+    when(claimRepository.findById(claimId)).thenReturn(Optional.of(existingClaim));
+    when(claimRepository.save(any(Claim.class))).thenReturn(existingClaim);
+    when(claimMapper.toDto(any(AutoClaim.class))).thenReturn(updateDto);
+    doAnswer(
+            invocation -> {
+              Mappers.getMapper(ClaimMapper.class)
+                  .populateAutoClaimFromDto(invocation.getArgument(0), invocation.getArgument(1));
+              return null;
+            })
+        .when(claimMapper)
+        .populateAutoClaimFromDto(any(AutoClaimDto.class), any(AutoClaim.class));
+
+    // When: The updateClaim method is called
+    ClaimDto result = claimService.updateClaim(claimId, updateDto);
+
+    // Then: Verify the claim was updated correctly
+    ArgumentCaptor<Claim> claimCaptor = ArgumentCaptor.forClass(Claim.class);
+    verify(claimRepository).save(claimCaptor.capture());
+
+    Claim savedClaim = claimCaptor.getValue();
+    assertThat(savedClaim).isInstanceOf(AutoClaim.class);
+    assertThat(savedClaim.getId()).isEqualTo(claimId);
+
+    AutoClaim updatedAutoClaim = (AutoClaim) savedClaim;
+    assertThat(updatedAutoClaim.getDescription()).isEqualTo("Updated description");
+    assertThat(updatedAutoClaim.getLicensePlate()).isEqualTo("NEW456");
+    assertThat(updatedAutoClaim.getVehicleVin()).isEqualTo("NEW_VIN");
+    assertThat(updatedAutoClaim.getAccidentLocation()).isEqualTo("Updated location");
+    assertThat(result).isEqualTo(updateDto);
+  }
+
+  @Test
+  @DisplayName("Should update HomeClaim successfully when valid data is provided")
+  void updateClaim_withValidHomeClaimDto_shouldUpdateHomeClaim() {
+    // Given: An existing HomeClaim and updated HomeClaimDto
+    long claimId = 2L;
+
+    HomeClaim existingClaim = new HomeClaim();
+    existingClaim.setId(claimId);
+    existingClaim.setDescription("Original home damage");
+    existingClaim.setTypeOfDamage("Water damage");
+
+    HomeClaimDto updateDto =
+        new HomeClaimDto()
+            .id(claimId)
+            .description("Updated home damage description")
+            .dateOfIncident(LocalDate.now())
+            .typeOfDamage("Fire damage")
+            .damagedItems("Updated damaged items list");
+
+    when(claimRepository.findById(claimId)).thenReturn(Optional.of(existingClaim));
+    when(claimRepository.save(any(Claim.class))).thenReturn(existingClaim);
+    when(claimMapper.toDto(any(HomeClaim.class))).thenReturn(updateDto);
+    doAnswer(
+            invocation -> {
+              Mappers.getMapper(ClaimMapper.class)
+                  .populateHomeClaimFromDto(invocation.getArgument(0), invocation.getArgument(1));
+              return null;
+            })
+        .when(claimMapper)
+        .populateHomeClaimFromDto(any(HomeClaimDto.class), any(HomeClaim.class));
+
+    // When
+    ClaimDto result = claimService.updateClaim(claimId, updateDto);
+
+    // Then
+    ArgumentCaptor<Claim> claimCaptor = ArgumentCaptor.forClass(Claim.class);
+    verify(claimRepository).save(claimCaptor.capture());
+
+    Claim savedClaim = claimCaptor.getValue();
+    assertThat(savedClaim).isInstanceOf(HomeClaim.class);
+
+    HomeClaim updatedHomeClaim = (HomeClaim) savedClaim;
+    assertThat(updatedHomeClaim.getDescription()).isEqualTo("Updated home damage description");
+    assertThat(updatedHomeClaim.getTypeOfDamage()).isEqualTo("Fire damage");
+    assertThat(updatedHomeClaim.getDamagedItems()).isEqualTo("Updated damaged items list");
+    assertThat(result).isEqualTo(updateDto);
+  }
+
+  @Test
+  @DisplayName("Should update HealthClaim successfully when valid data is provided")
+  void updateClaim_withValidHealthClaimDto_shouldUpdateHealthClaim() {
+    // Given: An existing HealthClaim and updated HealthClaimDto
+    long claimId = 3L;
+
+    HealthClaim existingClaim = new HealthClaim();
+    existingClaim.setId(claimId);
+    existingClaim.setDescription("Original health issue");
+    existingClaim.setMedicalProvider("Old Hospital");
+
+    HealthClaimDto updateDto =
+        new HealthClaimDto()
+            .id(claimId)
+            .description("Updated health issue description")
+            .dateOfIncident(LocalDate.now())
+            .medicalProvider("New Medical Center")
+            .procedureCode("CPT-12345");
+
+    when(claimRepository.findById(claimId)).thenReturn(Optional.of(existingClaim));
+    when(claimRepository.save(any(Claim.class))).thenReturn(existingClaim);
+    when(claimMapper.toDto(any(HealthClaim.class))).thenReturn(updateDto);
+    doAnswer(
+            invocation -> {
+              Mappers.getMapper(ClaimMapper.class)
+                  .populateHealthClaimFromDto(invocation.getArgument(0), invocation.getArgument(1));
+              return null;
+            })
+        .when(claimMapper)
+        .populateHealthClaimFromDto(any(HealthClaimDto.class), any(HealthClaim.class));
+
+    // When
+    ClaimDto result = claimService.updateClaim(claimId, updateDto);
+
+    // Then
+    ArgumentCaptor<Claim> claimCaptor = ArgumentCaptor.forClass(Claim.class);
+    verify(claimRepository).save(claimCaptor.capture());
+
+    Claim savedClaim = claimCaptor.getValue();
+    assertThat(savedClaim).isInstanceOf(HealthClaim.class);
+
+    HealthClaim updatedHealthClaim = (HealthClaim) savedClaim;
+    assertThat(updatedHealthClaim.getDescription()).isEqualTo("Updated health issue description");
+    assertThat(updatedHealthClaim.getMedicalProvider()).isEqualTo("New Medical Center");
+    assertThat(updatedHealthClaim.getProcedureCode()).isEqualTo("CPT-12345");
+    assertThat(result).isEqualTo(updateDto);
+  }
+
+  @Test
+  @DisplayName("Should throw ResourceNotFoundException when updating non-existent claim")
+  void updateClaim_whenClaimNotFound_shouldThrowException() {
+    // Given: Non-existent claim ID
+    long nonExistentClaimId = 999L;
+    AutoClaimDto updateDto =
+        new AutoClaimDto().id(nonExistentClaimId).description("This should fail");
+
+    when(claimRepository.findById(nonExistentClaimId)).thenReturn(Optional.empty());
+
+    // When & Then
+    ResourceNotFoundException exception =
+        assertThrows(
+            ResourceNotFoundException.class,
+            () -> claimService.updateClaim(nonExistentClaimId, updateDto));
+
+    assertThat(exception.getMessage()).contains("Claim not found with id: " + nonExistentClaimId);
+    verify(claimRepository, never()).save(any());
+  }
+
+  @Test
+  @DisplayName(
+      "Should throw IllegalArgumentException when DTO type doesn't match existing claim type")
+  void updateClaim_withMismatchedDtoType_shouldThrowException() {
+    // Given: Existing AutoClaim but trying to update with HomeClaimDto
+    long claimId = 1L;
+    AutoClaim existingAutoClaim = new AutoClaim();
+    existingAutoClaim.setId(claimId);
+
+    HomeClaimDto homeClaimDto =
+        new HomeClaimDto().id(claimId).description("This should fail - wrong type");
+
+    when(claimRepository.findById(claimId)).thenReturn(Optional.of(existingAutoClaim));
+
+    // When & Then
+    IllegalArgumentException exception =
+        assertThrows(
+            IllegalArgumentException.class, () -> claimService.updateClaim(claimId, homeClaimDto));
+
+    assertThat(exception.getMessage())
+        .contains("Claim type AutoClaim does not match provided DTO type HomeClaimDto");
+    verify(claimRepository, never()).save(any());
+  }
+
+  @Test
+  @DisplayName(
+      "Should throw IllegalArgumentException when trying to update AutoClaim with HomeClaimDto")
+  void updateClaim_autoClaimWithHomeDto_shouldThrowException() {
+    // Given: Existing AutoClaim
+    long claimId = 1L;
+    AutoClaim existingClaim = new AutoClaim();
+    existingClaim.setId(claimId);
+
+    HomeClaimDto wrongDto = new HomeClaimDto().id(claimId).description("Wrong DTO type");
+
+    when(claimRepository.findById(claimId)).thenReturn(Optional.of(existingClaim));
+
+    // When & Then
+    IllegalArgumentException exception =
+        assertThrows(
+            IllegalArgumentException.class, () -> claimService.updateClaim(claimId, wrongDto));
+
+    assertThat(exception.getMessage())
+        .contains("AutoClaim does not match provided DTO type HomeClaimDto");
+  }
+
+  @Test
+  @DisplayName(
+      "Should throw IllegalArgumentException when trying to update HomeClaim with HealthClaimDto")
+  void updateClaim_homeClaimWithHealthDto_shouldThrowException() {
+    // Given: Existing HomeClaim
+    long claimId = 2L;
+    HomeClaim existingClaim = new HomeClaim();
+    existingClaim.setId(claimId);
+
+    HealthClaimDto wrongDto = new HealthClaimDto().id(claimId).description("Wrong DTO type");
+
+    when(claimRepository.findById(claimId)).thenReturn(Optional.of(existingClaim));
+
+    // When & Then
+    IllegalArgumentException exception =
+        assertThrows(
+            IllegalArgumentException.class, () -> claimService.updateClaim(claimId, wrongDto));
+
+    assertThat(exception.getMessage())
+        .contains("HomeClaim does not match provided DTO type HealthClaimDto");
+  }
+
+  @Test
+  @DisplayName(
+      "Should throw IllegalArgumentException when trying to update HealthClaim with AutoClaimDto")
+  void updateClaim_healthClaimWithAutoDto_shouldThrowException() {
+    // Given: Existing HealthClaim
+    long claimId = 3L;
+    HealthClaim existingClaim = new HealthClaim();
+    existingClaim.setId(claimId);
+
+    AutoClaimDto wrongDto = new AutoClaimDto().id(claimId).description("Wrong DTO type");
+
+    when(claimRepository.findById(claimId)).thenReturn(Optional.of(existingClaim));
+
+    // When & Then
+    IllegalArgumentException exception =
+        assertThrows(
+            IllegalArgumentException.class, () -> claimService.updateClaim(claimId, wrongDto));
+
+    assertThat(exception.getMessage())
+        .contains("HealthClaim does not match provided DTO type AutoClaimDto");
+  }
+
   // ==================== HELPER METHODS ====================
 
   private Policy createPolicy(Long id, PolicyType type, PolicyStatus status) {

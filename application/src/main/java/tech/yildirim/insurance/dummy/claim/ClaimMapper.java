@@ -119,3 +119,4 @@ public interface ClaimMapper {
   @Mapping(target = "assignedAdjuster", ignore = true)
   void populateHealthClaimFromDto(HealthClaimDto dto, @MappingTarget HealthClaim entity);
 }
+

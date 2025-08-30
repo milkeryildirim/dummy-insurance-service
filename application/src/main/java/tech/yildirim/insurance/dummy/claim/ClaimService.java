@@ -40,4 +40,13 @@ public interface ClaimService {
    * @return The updated claim DTO with the assignee information.
    */
   ClaimDto assignAdjuster(Long claimId, Long employeeId);
+
+  /**
+   * Updates an existing claim.
+   *
+   * @param claimId The ID of the claim to update.
+   * @param claimDto The DTO containing the updated claim details.
+   * @return The updated claim DTO.
+   */
+  ClaimDto updateClaim(Long claimId, ClaimDto claimDto);
 }

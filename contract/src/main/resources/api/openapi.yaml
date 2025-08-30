@@ -23,6 +23,12 @@ paths:
     $ref: './paths/policies_search.yaml'
   /policies/{id}:
     $ref: './paths/policies_item.yaml'
+  /policies/{policyId}/auto-claims:
+    $ref: './paths/auto_claims_by_policy.yaml'
+  /policies/{policyId}/home-claims:
+    $ref: './paths/home_claims_by_policy.yaml'
+  /policies/{policyId}/health-claims:
+    $ref: './paths/health_claims_by_policy.yaml'
   # Auto Claims specific endpoints
   /auto-claims:
     $ref: './paths/auto_claims_collection.yaml'

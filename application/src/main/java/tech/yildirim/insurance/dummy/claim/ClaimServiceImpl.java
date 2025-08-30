@@ -149,6 +149,41 @@ public class ClaimServiceImpl implements ClaimService {
     return toDto(updatedClaim);
   }
 
+  @Override
+  @Transactional
+  public ClaimDto updateClaim(Long claimId, ClaimDto claimDto) {
+    log.info("Attempting to update claim with id: {}", claimId);
+
+    Claim existingClaim =
+        claimRepository
+            .findById(claimId)
+            .orElseThrow(
+                () -> {
+                  log.warn("Cannot update claim. Claim with id {} not found.", claimId);
+                  return new ResourceNotFoundException("Claim not found with id: " + claimId);
+                });
+
+    // Validate that the DTO type matches the existing claim type
+    validateDtoMatchesClaimType(claimDto, existingClaim);
+
+    // Update the claim based on its specific type
+    switch (existingClaim) {
+      case AutoClaim autoClaim ->
+          claimMapper.populateAutoClaimFromDto((AutoClaimDto) claimDto, autoClaim);
+      case HomeClaim homeClaim ->
+          claimMapper.populateHomeClaimFromDto((HomeClaimDto) claimDto, homeClaim);
+      case HealthClaim healthClaim ->
+          claimMapper.populateHealthClaimFromDto((HealthClaimDto) claimDto, healthClaim);
+      default ->
+          throw new UnsupportedOperationException("Claim type not supported: " + existingClaim);
+    }
+
+    Claim updatedClaim = claimRepository.save(existingClaim);
+    log.info("Successfully updated claim with id: {}", updatedClaim.getId());
+
+    return toDto(updatedClaim);
+  }
+
   /**
    * Helper method to instantiate the correct Claim subclass based on PolicyType. This is the core
    * of our polymorphic handling for claim creation.
@@ -215,5 +250,37 @@ public class ClaimServiceImpl implements ClaimService {
     }
 
     log.debug("DTO validation passed for policy type {}", policyType);
+  }
+
+  /**
+   * Validates that the given DTO matches the existing claim's type. Throws an
+   * IllegalArgumentException if there is a mismatch.
+   */
+  private void validateDtoMatchesClaimType(ClaimDto claimDto, Claim claim) {
+    boolean isValid =
+        switch (claim) {
+          case AutoClaim autoClaim -> claimDto instanceof AutoClaimDto;
+          case HomeClaim homeClaim -> claimDto instanceof HomeClaimDto;
+          case HealthClaim healthClaim -> claimDto instanceof HealthClaimDto;
+          default -> {
+            log.error("Unsupported claim type for validation: {}", claim);
+            throw new UnsupportedOperationException(
+                "Validation not supported for claim type " + claim);
+          }
+        };
+
+    if (!isValid) {
+      log.error(
+          "DTO type mismatch. Expected DTO for claim type {}, but got {}",
+          claim.getClass().getSimpleName(),
+          claimDto.getClass().getSimpleName());
+      throw new IllegalArgumentException(
+          "Claim type "
+              + claim.getClass().getSimpleName()
+              + " does not match provided DTO type "
+              + claimDto.getClass().getSimpleName());
+    }
+
+    log.debug("DTO validation passed for claim type {}", claim.getClass().getSimpleName());
   }
 }

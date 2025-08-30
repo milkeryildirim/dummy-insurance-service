@@ -6,7 +6,7 @@
   <parent>
     <groupId>tech.yildirim</groupId>
     <artifactId>dummy-insurance-parent</artifactId>
-    <version>0.0.3-SNAPSHOT</version>
+    <version>0.0.4-SNAPSHOT</version>
   </parent>
   <artifactId>dummy-insurance-application</artifactId>
   <name>dummy-insurance-application</name>

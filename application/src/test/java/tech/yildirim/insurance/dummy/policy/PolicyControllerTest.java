@@ -7,12 +7,14 @@ import static org.mockito.ArgumentMatchers.anyLong;
 import static org.mockito.Mockito.when;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.put;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import java.math.BigDecimal;
 import java.time.LocalDate;
+import java.util.Collections;
 import java.util.List;
 import java.util.Optional;
 import org.junit.jupiter.api.DisplayName;
@@ -28,9 +30,11 @@ import tech.yildirim.insurance.api.generated.model.AutoClaimDto;
 import tech.yildirim.insurance.api.generated.model.ClaimDto;
 import tech.yildirim.insurance.api.generated.model.HealthClaimDto;
 import tech.yildirim.insurance.api.generated.model.HomeClaimDto;
+import tech.yildirim.insurance.api.generated.model.PolicyConditionsDto;
 import tech.yildirim.insurance.api.generated.model.PolicyDto;
 import tech.yildirim.insurance.dummy.claim.ClaimService;
 import tech.yildirim.insurance.dummy.common.ResourceNotFoundException;
+import tech.yildirim.insurance.dummy.policy.condition.PolicyConditionsService;
 
 @WebMvcTest(PolicyController.class)
 @DisplayName("Policy Controller Web Layer Tests")
@@ -39,6 +43,8 @@ class PolicyControllerTest {
   @Autowired private MockMvc mockMvc;
 
   @Autowired private PolicyService policyService;
+
+  @Autowired private PolicyConditionsService policyConditionsService;
 
   @Autowired private ClaimService claimService;
 
@@ -54,6 +60,11 @@ class PolicyControllerTest {
     @Bean
     public ClaimService claimService() {
       return Mockito.mock(ClaimService.class);
+    }
+
+    @Bean
+    public PolicyConditionsService policyConditionsService() {
+      return Mockito.mock(PolicyConditionsService.class);
     }
   }
 
@@ -300,5 +311,43 @@ class PolicyControllerTest {
                 .param("status", "SUBMITTED"))
         .andExpect(status().isOk())
         .andExpect(jsonPath("$", hasSize(1)));
+  }
+
+  @Test
+  @DisplayName("GET /policies/conditions - Should return current conditions with 200 OK")
+  void getPolicyConditions_shouldReturn200Ok() throws Exception {
+    // Given
+    PolicyConditionsDto conditionsDto = new PolicyConditionsDto().freeCancellationDays(14);
+    when(policyConditionsService.getPolicyConditions()).thenReturn(conditionsDto);
+
+    // When & Then
+    mockMvc
+        .perform(get("/policies/conditions"))
+        .andExpect(status().isOk())
+        .andExpect(jsonPath("$.freeCancellationDays", is(14)));
+  }
+
+  @Test
+  @DisplayName("PUT /policies/conditions - Should update conditions and return 200 OK")
+  void updatePolicyConditions_shouldReturn200Ok() throws Exception {
+    // Given: A complete and valid DTO
+    PolicyConditionsDto requestDto =
+        new PolicyConditionsDto()
+            .freeCancellationDays(30)
+            .noClaimBonusPercentage(new BigDecimal("0.07"))
+            .cancellationRules(Collections.emptyList());
+
+    PolicyConditionsDto responseDto = new PolicyConditionsDto().freeCancellationDays(30);
+    when(policyConditionsService.updatePolicyConditions(any(PolicyConditionsDto.class)))
+        .thenReturn(responseDto);
+
+    // When & Then
+    mockMvc
+        .perform(
+            put("/policies/conditions")
+                .contentType(MediaType.APPLICATION_JSON)
+                .content(objectMapper.writeValueAsString(requestDto)))
+        .andExpect(status().isOk())
+        .andExpect(jsonPath("$.freeCancellationDays", is(30)));
   }
 }

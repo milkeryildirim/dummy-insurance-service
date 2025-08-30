@@ -11,8 +11,10 @@ import tech.yildirim.insurance.api.generated.model.AutoClaimDto;
 import tech.yildirim.insurance.api.generated.model.ClaimDto;
 import tech.yildirim.insurance.api.generated.model.HealthClaimDto;
 import tech.yildirim.insurance.api.generated.model.HomeClaimDto;
+import tech.yildirim.insurance.api.generated.model.PolicyConditionsDto;
 import tech.yildirim.insurance.api.generated.model.PolicyDto;
 import tech.yildirim.insurance.dummy.claim.ClaimService;
+import tech.yildirim.insurance.dummy.policy.condition.PolicyConditionsService;
 
 /**
  * REST Controller for managing policies. Implements the generated {@link PoliciesApi} interface.
@@ -23,6 +25,7 @@ import tech.yildirim.insurance.dummy.claim.ClaimService;
 public class PolicyController implements PoliciesApi {
 
   private final PolicyService policyService;
+  private final PolicyConditionsService policyConditionsService;
   private final ClaimService claimService;
 
   @Override
@@ -138,5 +141,19 @@ public class PolicyController implements PoliciesApi {
 
     log.debug("Found {} health claims for policy id: {}", healthClaims.size(), policyId);
     return ResponseEntity.ok(healthClaims);
+  }
+
+  @Override
+  public ResponseEntity<PolicyConditionsDto> getPolicyConditions() {
+    PolicyConditionsDto conditions = policyConditionsService.getPolicyConditions();
+    return ResponseEntity.ok(conditions);
+  }
+
+  @Override
+  public ResponseEntity<PolicyConditionsDto> updatePolicyConditions(
+      PolicyConditionsDto policyConditionsDto) {
+    PolicyConditionsDto updatedConditions =
+        policyConditionsService.updatePolicyConditions(policyConditionsDto);
+    return ResponseEntity.ok(updatedConditions);
   }
 }

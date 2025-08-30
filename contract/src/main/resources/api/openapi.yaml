@@ -29,33 +29,33 @@ paths:
     $ref: './paths/home_claims_by_policy.yaml'
   /policies/{policyId}/health-claims:
     $ref: './paths/health_claims_by_policy.yaml'
+  /policies/conditions:
+    $ref: './paths/policy_conditions.yaml'
   # Auto Claims specific endpoints
-  /auto-claims:
+  /claims/auto:
     $ref: './paths/auto_claims_collection.yaml'
-  /auto-claims/{id}:
+  /claims/auto/{id}:
     $ref: './paths/auto_claims_item.yaml'
-  /auto-claims/{id}/assign-adjuster:
+  /claims/auto/{id}/assign-adjuster:
     $ref: './paths/auto_claims_assignment.yaml'
   # Home Claims specific endpoints
-  /home-claims:
+  /claims/home:
     $ref: './paths/home_claims_collection.yaml'
-  /home-claims/{id}:
+  /claims/home/{id}:
     $ref: './paths/home_claims_item.yaml'
-  /home-claims/{id}/assign-adjuster:
+  /claims/home/{id}/assign-adjuster:
     $ref: './paths/home_claims_assignment.yaml'
   # Health Claims specific endpoints
-  /health-claims:
+  /claims/health:
     $ref: './paths/health_claims_collection.yaml'
-  /health-claims/{id}:
+  /claims/health/{id}:
     $ref: './paths/health_claims_item.yaml'
-  /health-claims/{id}/assign-adjuster:
+  /claims/health/{id}/assign-adjuster:
     $ref: './paths/health_claims_assignment.yaml'
   /employees:
     $ref: './paths/employees_collection.yaml'
   /employees/{id}:
     $ref: './paths/employees_item.yaml'
-  /policy-conditions:
-    $ref: './paths/policy_conditions.yaml'
   /agencies:
     $ref: './paths/agencies_collection.yaml'
   /agencies/{id}:

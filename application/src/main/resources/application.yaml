@@ -29,5 +29,3 @@ springdoc:
   swagger-ui:
     path: /swagger-ui.html
   default-produces-media-type: application/json
-  paths-to-match:
-    - /api/** # Only document endpoints under /api/ path

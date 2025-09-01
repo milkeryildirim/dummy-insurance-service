@@ -38,7 +38,7 @@ public class Customer {
 
   @Embedded private Address address;
 
-  @Column(nullable = false)
+  @Column(nullable = true)
   private String password;
 
   @Column(nullable = false)

@@ -32,5 +32,4 @@ required:
   - lastName
   - dateOfBirth
   - address
-  - password
   - email

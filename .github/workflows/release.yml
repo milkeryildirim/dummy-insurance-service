@@ -35,13 +35,13 @@ jobs:
 
       - name: Set version
         if: github.event.inputs.version
-        run: ./mvnw versions:set -DnewVersion=${{ github.event.inputs.version }}
+        run: mvn versions:set -DnewVersion=${{ github.event.inputs.version }}
 
       - name: Build and install dependencies
-        run: ./mvnw clean install -DskipTests
+        run: mvn clean install -DskipTests
 
       - name: Run tests
-        run: ./mvnw test
+        run: mvn test
 
       - name: Create GitHub Release
         uses: softprops/action-gh-release@v1

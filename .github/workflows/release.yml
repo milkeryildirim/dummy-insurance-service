@@ -12,6 +12,9 @@ on:
 jobs:
   release:
     runs-on: ubuntu-latest
+    permissions:
+      contents: write
+
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
@@ -44,8 +47,8 @@ jobs:
         uses: softprops/action-gh-release@v1
         with:
           files: |
-            target/*.jar
-            */target/*.jar
+            application/target/*.jar
+            contract/target/*.jar
           generate_release_notes: true
           draft: false
           prerelease: false

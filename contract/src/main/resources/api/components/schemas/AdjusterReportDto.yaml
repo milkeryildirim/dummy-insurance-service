@@ -1,0 +1,80 @@
+type: object
+description: "Data Transfer Object for Adjuster Report information"
+properties:
+  id:
+    type: integer
+    format: int64
+    readOnly: true
+    example: 1
+  claimId:
+    type: integer
+    format: int64
+    description: "The ID of the claim this report belongs to"
+    example: 1001
+  adjusterId:
+    type: integer
+    format: int64
+    description: "The ID of the adjuster who created this report"
+    example: 20
+  adjusterName:
+    type: string
+    readOnly: true
+    description: "Full name of the adjuster"
+    example: "Michael Schmidt"
+  summary:
+    type: string
+    description: "Brief summary of the assessment"
+    maxLength: 1000
+    example: "Vehicle damage assessment completed. Front bumper replacement required."
+  findings:
+    type: string
+    description: "Detailed findings from the assessment"
+    maxLength: 2000
+    example: "Damage consistent with reported incident. No pre-existing damage detected."
+    nullable: true
+  recommendations:
+    type: string
+    description: "Adjuster's recommendations"
+    maxLength: 1000
+    example: "Recommend approval for repair costs as estimated."
+    nullable: true
+  recommendedAmount:
+    type: number
+    format: decimal
+    description: "Amount recommended for payout"
+    example: 1250.75
+    nullable: true
+  status:
+    type: string
+    enum: [ DRAFT, SUBMITTED, REVIEWED, APPROVED, REJECTED ]
+    description: "Current status of the report"
+    example: "SUBMITTED"
+  reportPdfPath:
+    type: string
+    description: "Path to the uploaded PDF report file"
+    maxLength: 500
+    nullable: true
+    readOnly: true
+  originalPdfFilename:
+    type: string
+    description: "Original filename of the uploaded PDF"
+    maxLength: 255
+    nullable: true
+    readOnly: true
+  createdAt:
+    type: string
+    format: date-time
+    readOnly: true
+    description: "When the report was created"
+    example: "2025-10-25T21:20:04Z"
+  updatedAt:
+    type: string
+    format: date-time
+    readOnly: true
+    description: "When the report was last updated"
+    example: "2025-10-25T21:20:04Z"
+required:
+  - claimId
+  - adjusterId
+  - summary
+  - status

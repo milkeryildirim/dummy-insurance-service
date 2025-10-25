@@ -38,6 +38,16 @@ paths:
     $ref: './paths/auto_claims_item.yaml'
   /claims/auto/{id}/assign-adjuster:
     $ref: './paths/auto_claims_assignment.yaml'
+  /claims/auto/{id}/adjuster-reports:
+    $ref: './paths/auto_claims_adjuster_reports_collection.yaml'
+  /claims/auto/{id}/adjuster-reports/{reportId}:
+    $ref: './paths/auto_claims_adjuster_reports_item.yaml'
+  /claims/auto/{id}/customer-invoices:
+    $ref: './paths/auto_claims_customer_invoices_collection.yaml'
+  /claims/auto/{id}/customer-invoices/{invoiceId}:
+    $ref: './paths/auto_claims_customer_invoices_item.yaml'
+  /claims/auto/{id}/decision:
+    $ref: './paths/auto_claims_decision.yaml'
   # Home Claims specific endpoints
   /claims/home:
     $ref: './paths/home_claims_collection.yaml'
@@ -45,6 +55,16 @@ paths:
     $ref: './paths/home_claims_item.yaml'
   /claims/home/{id}/assign-adjuster:
     $ref: './paths/home_claims_assignment.yaml'
+  /claims/home/{id}/adjuster-reports:
+    $ref: './paths/home_claims_adjuster_reports_collection.yaml'
+  /claims/home/{id}/adjuster-reports/{reportId}:
+    $ref: './paths/home_claims_adjuster_reports_item.yaml'
+  /claims/home/{id}/customer-invoices:
+    $ref: './paths/home_claims_customer_invoices_collection.yaml'
+  /claims/home/{id}/customer-invoices/{invoiceId}:
+    $ref: './paths/home_claims_customer_invoices_item.yaml'
+  /claims/home/{id}/decision:
+    $ref: './paths/home_claims_decision.yaml'
   # Health Claims specific endpoints
   /claims/health:
     $ref: './paths/health_claims_collection.yaml'
@@ -52,10 +72,22 @@ paths:
     $ref: './paths/health_claims_item.yaml'
   /claims/health/{id}/assign-adjuster:
     $ref: './paths/health_claims_assignment.yaml'
+  /claims/health/{id}/adjuster-reports:
+    $ref: './paths/health_claims_adjuster_reports_collection.yaml'
+  /claims/health/{id}/adjuster-reports/{reportId}:
+    $ref: './paths/health_claims_adjuster_reports_item.yaml'
+  /claims/health/{id}/customer-invoices:
+    $ref: './paths/health_claims_customer_invoices_collection.yaml'
+  /claims/health/{id}/customer-invoices/{invoiceId}:
+    $ref: './paths/health_claims_customer_invoices_item.yaml'
+  /claims/health/{id}/decision:
+    $ref: './paths/health_claims_decision.yaml'
   /employees:
     $ref: './paths/employees_collection.yaml'
   /employees/{id}:
     $ref: './paths/employees_item.yaml'
+  /employees/available-adjusters:
+    $ref: './paths/employees_available_adjusters.yaml'
   /agencies:
     $ref: './paths/agencies_collection.yaml'
   /agencies/{id}:
@@ -88,6 +120,12 @@ components:
       $ref: './components/schemas/CancellationPenaltyRuleDto.yaml'
     AgencyDto:
       $ref: './components/schemas/AgencyDto.yaml'
+    AdjusterReportDto:
+      $ref: './components/schemas/AdjusterReportDto.yaml'
+    CustomerInvoiceDto:
+      $ref: './components/schemas/CustomerInvoiceDto.yaml'
+    ClaimDecisionDto:
+      $ref: './components/schemas/ClaimDecisionDto.yaml'
   parameters:
     CustomerId:
       name: id
@@ -109,6 +147,22 @@ components:
       name: id
       in: path
       description: "The unique identifier of the claim"
+      required: true
+      schema:
+        type: integer
+        format: int64
+    ReportId:
+      name: reportId
+      in: path
+      description: "The unique identifier of the adjuster report"
+      required: true
+      schema:
+        type: integer
+        format: int64
+    InvoiceId:
+      name: invoiceId
+      in: path
+      description: "The unique identifier of the customer invoice"
       required: true
       schema:
         type: integer

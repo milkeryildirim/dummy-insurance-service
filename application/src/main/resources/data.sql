@@ -31,24 +31,70 @@ VALUES (1, 'Max', 'Mustermann', '1985-03-15', 'Musterstraße 1A',
         'k.mueller@example.de',
         CURRENT_TIMESTAMP, CURRENT_TIMESTAMP);
 
-
 -- -----------------------------------------------------------------
 --  2. EMPLOYEES
 -- -----------------------------------------------------------------
-INSERT INTO employees (id, employee_id, first_name, last_name, email, phone_number, role, password,
+
+-- Internal Employees
+INSERT INTO employees (id, employee_id, first_name, last_name, email, phone_number, role,
+                       employment_type, company_name, specialization_area, availability_status,
                        created_at, updated_at)
-VALUES (10, 'EMP-1001', 'Sabine', 'Meier', 'sabine.meier@insurance.com', '+49 30 555 1001',
-        'MANAGER', '$2a$10$wI5g.F1b.qP2c.aH4nI5b.jE7a.fE9c.dE/kL8g.A.L/jJ3eH.pW', CURRENT_TIMESTAMP,
-        CURRENT_TIMESTAMP),
-       (11, 'EMP-1002', 'Jürgen', 'Weber', 'jurgen.weber@insurance.com', '+49 30 555 1002',
-        'CLAIMS_ADJUSTER', '$2a$10$aH4nI5b.jE7a.fE9c.dE/kL8g.A.L/jJ3eH.pW5c5uS.F1b.qP2c',
-        CURRENT_TIMESTAMP, CURRENT_TIMESTAMP),
-       (12, 'EMP-1003', 'Anke', 'Huber', 'anke.huber@insurance.com', '+49 30 555 1003',
-        'CLAIMS_ADJUSTER', '$2a$10$jJ3eH.pW5c5uS.F1b.qP2c.aH4nI5b.jE7a.fE9c.dE/kL8g.A.L',
-        CURRENT_TIMESTAMP, CURRENT_TIMESTAMP),
-       (13, 'EMP-1004', 'Stefan', 'Bauer', 'stefan.bauer@insurance.com', '+49 30 555 1004',
-        'UNDERWRITER', '$2a$10$kL8g.A.L/jJ3eH.pW5c5uS.F1b.qP2c.aH4nI5b.jE7a.fE9c.dE',
-        CURRENT_TIMESTAMP, CURRENT_TIMESTAMP);
+VALUES
+-- Internal Management and Staff
+(10, 'EMP-1001', 'Sabine', 'Meier', 'sabine.meier@insurance.com', '+49 30 555 1001',
+ 'MANAGER', 'INTERNAL', 'InsuranceCorp GmbH', NULL, 'AVAILABLE', CURRENT_TIMESTAMP,
+ CURRENT_TIMESTAMP),
+
+(11, 'EMP-1002', 'Jürgen', 'Weber', 'jurgen.weber@insurance.com', '+49 30 555 1002',
+ 'CLAIMS_ADJUSTER', 'INTERNAL', 'InsuranceCorp GmbH', 'AUTO', 'AVAILABLE', CURRENT_TIMESTAMP,
+ CURRENT_TIMESTAMP),
+
+(12, 'EMP-1003', 'Anke', 'Huber', 'anke.huber@insurance.com', '+49 30 555 1003',
+ 'CLAIMS_ADJUSTER', 'INTERNAL', 'InsuranceCorp GmbH', 'HOME', 'AVAILABLE', CURRENT_TIMESTAMP,
+ CURRENT_TIMESTAMP),
+
+(13, 'EMP-1004', 'Stefan', 'Bauer', 'stefan.bauer@insurance.com', '+49 30 555 1004',
+ 'UNDERWRITER', 'INTERNAL', 'InsuranceCorp GmbH', NULL, 'AVAILABLE', CURRENT_TIMESTAMP,
+ CURRENT_TIMESTAMP),
+
+-- External Auto Adjusters
+(20, 'EXT-ADJ-AUTO-001', 'Michael', 'Schmidt', 'michael.schmidt@kfz-gutachter-berlin.de',
+ '+49 30 777 1001', 'CLAIMS_ADJUSTER', 'EXTERNAL', 'KFZ Gutachter Schmidt GmbH', 'AUTO',
+ 'AVAILABLE',
+ CURRENT_TIMESTAMP, CURRENT_TIMESTAMP),
+
+(21, 'EXT-ADJ-AUTO-002', 'Sandra', 'Wagner', 'sandra.wagner@fahrzeug-experten-muenchen.de',
+ '+49 89 777 1002', 'CLAIMS_ADJUSTER', 'EXTERNAL', 'Fahrzeug Experten München GmbH', 'AUTO',
+ 'AVAILABLE',
+ CURRENT_TIMESTAMP, CURRENT_TIMESTAMP),
+
+-- External Home Adjusters
+(22, 'EXT-ADJ-HOME-001', 'Thomas', 'Bauer', 'thomas.bauer@immobilien-sachverstaendige-hamburg.de',
+ '+49 40 777 2001', 'CLAIMS_ADJUSTER', 'EXTERNAL', 'Immobilien Sachverständige Hamburg GmbH',
+ 'HOME', 'AVAILABLE',
+ CURRENT_TIMESTAMP, CURRENT_TIMESTAMP),
+
+(23, 'EXT-ADJ-HOME-002', 'Petra', 'Klein', 'petra.klein@gebaude-experten-berlin.de',
+ '+49 30 777 2002', 'CLAIMS_ADJUSTER', 'EXTERNAL', 'Gebäude Experten Berlin GmbH', 'HOME', 'BUSY',
+ CURRENT_TIMESTAMP, CURRENT_TIMESTAMP),
+
+-- External Health Adjusters
+(24, 'EXT-ADJ-HEALTH-001', 'Dr. Andrea', 'Müller', 'andrea.mueller@med-gutachter-frankfurt.de',
+ '+49 69 777 3001', 'CLAIMS_ADJUSTER', 'EXTERNAL', 'Medizinische Gutachter Frankfurt GmbH',
+ 'HEALTH', 'AVAILABLE',
+ CURRENT_TIMESTAMP, CURRENT_TIMESTAMP),
+
+(25, 'EXT-ADJ-HEALTH-002', 'Dr. Frank', 'Weber', 'frank.weber@gesundheits-experten-koeln.de',
+ '+49 221 777 3002', 'CLAIMS_ADJUSTER', 'EXTERNAL', 'Gesundheits Experten Köln GmbH', 'HEALTH',
+ 'AVAILABLE',
+ CURRENT_TIMESTAMP, CURRENT_TIMESTAMP),
+
+-- External LIABILITY Adjuster
+(26, 'EXT-ADJ-LIABILITY-001', 'Jennifer', 'Hoffmann',
+ 'jennifer.hoffmann@haftpflicht-experten-muenchen.de',
+ '+49 89 777 4001', 'CLAIMS_ADJUSTER', 'EXTERNAL', 'Haftpflicht Experten München GmbH', 'LIABILITY',
+ 'AVAILABLE',
+ CURRENT_TIMESTAMP, CURRENT_TIMESTAMP);
 
 
 -- -----------------------------------------------------------------

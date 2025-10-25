@@ -67,6 +67,24 @@ properties:
     readOnly: true
     description: "Contact phone number of the assigned employee adjuster"
     nullable: true
+  adjusterReports:
+    type: array
+    items:
+      $ref: './AdjusterReportDto.yaml'
+    description: "List of adjuster reports for this claim"
+    readOnly: true
+  customerInvoices:
+    type: array
+    items:
+      $ref: './CustomerInvoiceDto.yaml'
+    description: "List of customer-uploaded invoices for this claim"
+    readOnly: true
+  claimDecision:
+    allOf:
+      - $ref: './ClaimDecisionDto.yaml'
+    description: "Final decision made on this claim"
+    nullable: true
+    readOnly: true
 required:
   - claimType
   - policyId

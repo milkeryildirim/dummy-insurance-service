@@ -1,5 +1,6 @@
 package tech.yildirim.insurance.dummy.claim;
 
+import jakarta.persistence.CascadeType;
 import jakarta.persistence.Column;
 import jakarta.persistence.DiscriminatorColumn;
 import jakarta.persistence.DiscriminatorType;
@@ -14,11 +15,17 @@ import jakarta.persistence.Inheritance;
 import jakarta.persistence.InheritanceType;
 import jakarta.persistence.JoinColumn;
 import jakarta.persistence.ManyToOne;
+import jakarta.persistence.OneToMany;
+import jakarta.persistence.OneToOne;
 import jakarta.persistence.Table;
 import java.math.BigDecimal;
 import java.time.LocalDate;
 import java.time.ZonedDateTime;
+import java.util.ArrayList;
+import java.util.List;
 import lombok.Data;
+import lombok.EqualsAndHashCode;
+import lombok.ToString;
 import org.hibernate.annotations.CreationTimestamp;
 import tech.yildirim.insurance.dummy.employee.Employee;
 import tech.yildirim.insurance.dummy.policy.Policy;
@@ -28,6 +35,8 @@ import tech.yildirim.insurance.dummy.policy.Policy;
 @Inheritance(strategy = InheritanceType.SINGLE_TABLE)
 @DiscriminatorColumn(name = "claim_type", discriminatorType = DiscriminatorType.STRING)
 @Data
+@EqualsAndHashCode(exclude = {"adjusterReports", "customerInvoices", "claimDecision"})
+@ToString(exclude = {"adjusterReports", "customerInvoices", "claimDecision"})
 public abstract class Claim {
 
   @Id
@@ -64,4 +73,21 @@ public abstract class Claim {
   @CreationTimestamp
   @Column(nullable = false, updatable = false)
   private ZonedDateTime dateReported;
+
+  @OneToMany(
+      mappedBy = "claim",
+      cascade = CascadeType.ALL,
+      fetch = FetchType.LAZY,
+      orphanRemoval = true)
+  private List<AdjusterReport> adjusterReports = new ArrayList<>();
+
+  @OneToMany(
+      mappedBy = "claim",
+      cascade = CascadeType.ALL,
+      fetch = FetchType.LAZY,
+      orphanRemoval = true)
+  private List<CustomerInvoice> customerInvoices = new ArrayList<>();
+
+  @OneToOne(mappedBy = "claim", cascade = CascadeType.ALL, orphanRemoval = true)
+  private ClaimDecision claimDecision;
 }

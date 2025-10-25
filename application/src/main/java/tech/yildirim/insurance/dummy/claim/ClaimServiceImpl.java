@@ -1,7 +1,6 @@
 package tech.yildirim.insurance.dummy.claim;
 
-
-
+import java.math.BigDecimal;
 import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
@@ -33,6 +32,9 @@ public class ClaimServiceImpl implements ClaimService {
   private final PolicyRepository policyRepository;
   private final ClaimMapper claimMapper;
   private final EmployeeRepository employeeRepository;
+  private final AdjusterReportRepository adjusterReportRepository;
+  private final CustomerInvoiceRepository customerInvoiceRepository;
+  private final ClaimDecisionRepository claimDecisionRepository;
 
   @Override
   @Transactional
@@ -93,6 +95,32 @@ public class ClaimServiceImpl implements ClaimService {
   public Optional<ClaimDto> findClaimById(Long claimId) {
     log.info("Request to find claim with id: {}", claimId);
     return claimRepository.findById(claimId).map(this::toDto);
+  }
+
+  @Override
+  @Transactional(readOnly = true)
+  public Optional<ClaimDto> findClaimByIdWithDetails(Long claimId) {
+    log.info("Request to find claim with id: {} including all details", claimId);
+    return claimRepository
+        .findById(claimId)
+        .map(
+            claim -> {
+              ClaimDto claimDto = toDto(claim);
+
+              // Load related data
+              List<AdjusterReport> reports = adjusterReportRepository.findByClaimId(claimId);
+              List<CustomerInvoice> invoices = customerInvoiceRepository.findByClaimId(claimId);
+              Optional<ClaimDecision> decision = claimDecisionRepository.findByClaimId(claimId);
+
+              log.debug(
+                  "Found {} adjuster reports, {} customer invoices, and {} decision for claim {}",
+                  reports.size(),
+                  invoices.size(),
+                  decision.isPresent() ? 1 : 0,
+                  claimId);
+
+              return claimDto;
+            });
   }
 
   @Override
@@ -221,6 +249,171 @@ public class ClaimServiceImpl implements ClaimService {
     log.info("Found {} claims of type: {}", claims.size(), claimType);
 
     return toDtoList(claims);
+  }
+
+  @Override
+  @Transactional
+  public ClaimDto updateClaimStatus(Long claimId, ClaimStatus newStatus) {
+    log.info("Updating claim {} status to {}", claimId, newStatus);
+
+    Claim claim =
+        claimRepository
+            .findById(claimId)
+            .orElseThrow(
+                () -> new ResourceNotFoundException("Claim not found with id: " + claimId));
+
+    ClaimStatus oldStatus = claim.getStatus();
+    claim.setStatus(newStatus);
+
+    Claim updatedClaim = claimRepository.save(claim);
+    log.info("Successfully updated claim {} status from {} to {}", claimId, oldStatus, newStatus);
+
+    return toDto(updatedClaim);
+  }
+
+  @Override
+  @Transactional
+  public ClaimDto moveClaimToInReview(Long claimId) {
+    log.info("Moving claim {} to IN_REVIEW status", claimId);
+    return updateClaimStatus(claimId, ClaimStatus.IN_REVIEW);
+  }
+
+  @Override
+  @Transactional
+  public ClaimDto moveClaimToApproved(Long claimId, BigDecimal approvedAmount) {
+    log.info("Moving claim {} to APPROVED status with amount {}", claimId, approvedAmount);
+
+    Claim claim =
+        claimRepository
+            .findById(claimId)
+            .orElseThrow(
+                () -> new ResourceNotFoundException("Claim not found with id: " + claimId));
+
+    claim.setStatus(ClaimStatus.APPROVED);
+    claim.setPaidAmount(approvedAmount);
+
+    Claim updatedClaim = claimRepository.save(claim);
+    log.info("Successfully approved claim {} with amount {}", claimId, approvedAmount);
+
+    return toDto(updatedClaim);
+  }
+
+  @Override
+  @Transactional
+  public ClaimDto moveClaimToRejected(Long claimId) {
+    log.info("Moving claim {} to REJECTED status", claimId);
+    return updateClaimStatus(claimId, ClaimStatus.REJECTED);
+  }
+
+  @Override
+  @Transactional
+  public ClaimDto moveClaimToPaid(Long claimId, BigDecimal paidAmount) {
+    log.info("Moving claim {} to PAID status with amount {}", claimId, paidAmount);
+
+    Claim claim =
+        claimRepository
+            .findById(claimId)
+            .orElseThrow(
+                () -> new ResourceNotFoundException("Claim not found with id: " + claimId));
+
+    claim.setStatus(ClaimStatus.PAID);
+    claim.setPaidAmount(paidAmount);
+
+    Claim updatedClaim = claimRepository.save(claim);
+    log.info("Successfully marked claim {} as paid with amount {}", claimId, paidAmount);
+
+    return toDto(updatedClaim);
+  }
+
+  @Override
+  @Transactional(readOnly = true)
+  public boolean canAddAdjusterReports(Long claimId) {
+    log.debug("Checking if claim {} can have adjuster reports added", claimId);
+
+    Claim claim =
+        claimRepository
+            .findById(claimId)
+            .orElseThrow(
+                () -> new ResourceNotFoundException("Claim not found with id: " + claimId));
+
+    // Adjuster reports can be added if claim is SUBMITTED or IN_REVIEW
+    boolean canAdd =
+        claim.getStatus() == ClaimStatus.SUBMITTED || claim.getStatus() == ClaimStatus.IN_REVIEW;
+    log.debug("Claim {} can add adjuster reports: {}", claimId, canAdd);
+
+    return canAdd;
+  }
+
+  @Override
+  @Transactional(readOnly = true)
+  public boolean canAddCustomerInvoices(Long claimId) {
+    log.debug("Checking if claim {} can have customer invoices added", claimId);
+
+    Claim claim =
+        claimRepository
+            .findById(claimId)
+            .orElseThrow(
+                () -> new ResourceNotFoundException("Claim not found with id: " + claimId));
+
+    // Customer invoices can be added if claim is not PAID or REJECTED
+    boolean canAdd =
+        claim.getStatus() != ClaimStatus.PAID && claim.getStatus() != ClaimStatus.REJECTED;
+    log.debug("Claim {} can add customer invoices: {}", claimId, canAdd);
+
+    return canAdd;
+  }
+
+  @Override
+  @Transactional(readOnly = true)
+  public boolean canMakeDecision(Long claimId) {
+    log.debug("Checking if claim {} can have a decision made", claimId);
+
+    Claim claim =
+        claimRepository
+            .findById(claimId)
+            .orElseThrow(
+                () -> new ResourceNotFoundException("Claim not found with id: " + claimId));
+
+    // Decision can be made if claim is IN_REVIEW and no decision exists yet
+    boolean canMake =
+        claim.getStatus() == ClaimStatus.IN_REVIEW
+            && !claimDecisionRepository.existsByClaimId(claimId);
+    log.debug("Claim {} can make decision: {}", claimId, canMake);
+
+    return canMake;
+  }
+
+  @Override
+  @Transactional(readOnly = true)
+  public boolean isClaimReadyForDecision(Long claimId) {
+    log.debug("Checking if claim {} is ready for decision", claimId);
+
+    Claim claim =
+        claimRepository
+            .findById(claimId)
+            .orElseThrow(
+                () -> new ResourceNotFoundException("Claim not found with id: " + claimId));
+
+    // Check if claim has at least one submitted adjuster report
+    List<AdjusterReport> submittedReports =
+        adjusterReportRepository.findByClaimIdAndStatus(claimId, ReportStatus.SUBMITTED);
+
+    // Check if claim has at least one customer invoice
+    List<CustomerInvoice> invoices = customerInvoiceRepository.findByClaimId(claimId);
+
+    boolean isReady =
+        claim.getStatus() == ClaimStatus.IN_REVIEW
+            && !submittedReports.isEmpty()
+            && !invoices.isEmpty();
+
+    log.debug(
+        "Claim {} is ready for decision: {} (reports: {}, invoices: {})",
+        claimId,
+        isReady,
+        submittedReports.size(),
+        invoices.size());
+
+    return isReady;
   }
 
   /**

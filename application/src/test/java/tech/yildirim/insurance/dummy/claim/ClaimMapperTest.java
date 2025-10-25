@@ -5,9 +5,15 @@ import static org.assertj.core.api.Assertions.assertThat;
 import java.math.BigDecimal;
 import java.time.LocalDate;
 import java.time.ZonedDateTime;
+import java.util.ArrayList;
+import java.util.List;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.ExtendWith;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.boot.test.context.SpringBootTest;
+import org.springframework.test.context.junit.jupiter.SpringExtension;
 import tech.yildirim.insurance.api.generated.model.AutoClaimDto;
 import tech.yildirim.insurance.api.generated.model.ClaimDto;
 import tech.yildirim.insurance.api.generated.model.HealthClaimDto;
@@ -16,17 +22,18 @@ import tech.yildirim.insurance.dummy.employee.Employee;
 import tech.yildirim.insurance.dummy.employee.EmployeeRole;
 import tech.yildirim.insurance.dummy.policy.Policy;
 
+@ExtendWith(SpringExtension.class)
+@SpringBootTest
 @DisplayName("Claim Mapper Unit Tests")
 class ClaimMapperTest {
 
-  private ClaimMapper claimMapper;
+  @Autowired private ClaimMapper claimMapper;
+
   private Policy testPolicy;
   private Employee testEmployee;
 
   @BeforeEach
   void setUp() {
-    claimMapper = ClaimMapper.INSTANCE;
-
     testPolicy = new Policy();
     testPolicy.setId(201L);
 
@@ -44,7 +51,7 @@ class ClaimMapperTest {
   @Test
   @DisplayName("Should correctly map AutoClaim entity to ClaimDto with all fields")
   void shouldMapAutoClaimEntityToDto() {
-    // Given: An AutoClaim entity with all fields populated
+    // Given: An AutoClaim entity with all fields populated (but no related entities)
     AutoClaim autoClaim = new AutoClaim();
     autoClaim.setId(1L);
     autoClaim.setClaimNumber("CLM-AUTO-001");
@@ -60,6 +67,10 @@ class ClaimMapperTest {
     autoClaim.setLicensePlate("BMW-1234");
     autoClaim.setVehicleVin("VIN123456789ABCDEF");
     autoClaim.setAccidentLocation("Highway A10, Exit 15");
+    // Initialize empty collections to avoid null mapping issues
+    autoClaim.setAdjusterReports(new ArrayList<>());
+    autoClaim.setCustomerInvoices(new ArrayList<>());
+    autoClaim.setClaimDecision(null);
 
     // When: Mapping to DTO
     AutoClaimDto claimDto = claimMapper.toDto(autoClaim);
@@ -83,6 +94,11 @@ class ClaimMapperTest {
     assertThat(claimDto.getLicensePlate()).isEqualTo("BMW-1234");
     assertThat(claimDto.getVehicleVin()).isEqualTo("VIN123456789ABCDEF");
     assertThat(claimDto.getAccidentLocation()).isEqualTo("Highway A10, Exit 15");
+
+    // And: Related entities should be mapped as empty collections
+    assertThat(claimDto.getAdjusterReports()).isEmpty();
+    assertThat(claimDto.getCustomerInvoices()).isEmpty();
+    assertThat(claimDto.getClaimDecision()).isNull();
   }
 
   @Test
@@ -94,6 +110,10 @@ class ClaimMapperTest {
     autoClaim.setPolicy(testPolicy);
     autoClaim.setLicensePlate("TEST-456");
     autoClaim.setAssignedAdjuster(null);
+    // Initialize empty collections
+    autoClaim.setAdjusterReports(new ArrayList<>());
+    autoClaim.setCustomerInvoices(new ArrayList<>());
+    autoClaim.setClaimDecision(null);
 
     // When: Mapping to DTO
     AutoClaimDto claimDto = claimMapper.toDto(autoClaim);
@@ -101,6 +121,9 @@ class ClaimMapperTest {
     // Then: Adjuster contact should be null
     assertThat(claimDto.getAssignedAdjusterContact()).isNull();
     assertThat(claimDto.getLicensePlate()).isEqualTo("TEST-456");
+    assertThat(claimDto.getAdjusterReports()).isEmpty();
+    assertThat(claimDto.getCustomerInvoices()).isEmpty();
+    assertThat(claimDto.getClaimDecision()).isNull();
   }
 
   @Test
@@ -158,6 +181,10 @@ class ClaimMapperTest {
     // HomeClaim specific fields
     homeClaim.setTypeOfDamage("Water damage");
     homeClaim.setDamagedItems("Living room carpet, kitchen cabinets, basement walls");
+    // Initialize empty collections
+    homeClaim.setAdjusterReports(new ArrayList<>());
+    homeClaim.setCustomerInvoices(new ArrayList<>());
+    homeClaim.setClaimDecision(null);
 
     // When: Mapping to DTO
     HomeClaimDto claimDto = claimMapper.toDto(homeClaim);
@@ -181,6 +208,11 @@ class ClaimMapperTest {
     assertThat(claimDto.getTypeOfDamage()).isEqualTo("Water damage");
     assertThat(claimDto.getDamagedItems())
         .isEqualTo("Living room carpet, kitchen cabinets, basement walls");
+
+    // And: Related entities should be mapped as empty collections
+    assertThat(claimDto.getAdjusterReports()).isEmpty();
+    assertThat(claimDto.getCustomerInvoices()).isEmpty();
+    assertThat(claimDto.getClaimDecision()).isNull();
   }
 
   @Test
@@ -192,6 +224,10 @@ class ClaimMapperTest {
     homeClaim.setPolicy(testPolicy);
     homeClaim.setTypeOfDamage("Fire damage");
     homeClaim.setAssignedAdjuster(null);
+    // Initialize empty collections
+    homeClaim.setAdjusterReports(new ArrayList<>());
+    homeClaim.setCustomerInvoices(new ArrayList<>());
+    homeClaim.setClaimDecision(null);
 
     // When: Mapping to DTO
     HomeClaimDto claimDto = claimMapper.toDto(homeClaim);
@@ -217,7 +253,6 @@ class ClaimMapperTest {
             .damagedItems("Roof, attic insulation, electrical wiring");
 
     // When: Populating the entity from the DTO
-
     claimMapper.populateHomeClaimFromDto(dto, emptyHomeClaim);
 
     // Then: The entity should be populated with the DTO's data
@@ -258,6 +293,10 @@ class ClaimMapperTest {
     // HealthClaim specific fields
     healthClaim.setMedicalProvider("City General Hospital");
     healthClaim.setProcedureCode("CPT-99213");
+    // Initialize empty collections
+    healthClaim.setAdjusterReports(new ArrayList<>());
+    healthClaim.setCustomerInvoices(new ArrayList<>());
+    healthClaim.setClaimDecision(null);
 
     // When: Mapping to DTO
     HealthClaimDto claimDto = claimMapper.toDto(healthClaim);
@@ -280,6 +319,11 @@ class ClaimMapperTest {
     // And: HealthClaim specific fields should be mapped
     assertThat(claimDto.getMedicalProvider()).isEqualTo("City General Hospital");
     assertThat(claimDto.getProcedureCode()).isEqualTo("CPT-99213");
+
+    // And: Related entities should be mapped as empty collections
+    assertThat(claimDto.getAdjusterReports()).isEmpty();
+    assertThat(claimDto.getCustomerInvoices()).isEmpty();
+    assertThat(claimDto.getClaimDecision()).isNull();
   }
 
   @Test
@@ -291,6 +335,10 @@ class ClaimMapperTest {
     healthClaim.setPolicy(testPolicy);
     healthClaim.setMedicalProvider("Emergency Clinic");
     healthClaim.setAssignedAdjuster(null);
+    // Initialize empty collections
+    healthClaim.setAdjusterReports(new ArrayList<>());
+    healthClaim.setCustomerInvoices(new ArrayList<>());
+    healthClaim.setClaimDecision(null);
 
     // When: Mapping to DTO
     HealthClaimDto claimDto = claimMapper.toDto(healthClaim);
@@ -347,6 +395,10 @@ class ClaimMapperTest {
     claim.setDescription("Generic claim test");
     claim.setPolicy(testPolicy);
     claim.setAssignedAdjuster(testEmployee);
+    // Initialize empty collections
+    claim.setAdjusterReports(new ArrayList<>());
+    claim.setCustomerInvoices(new ArrayList<>());
+    claim.setClaimDecision(null);
 
     // When: Mapping to DTO using generic method
     AutoClaimDto claimDto = claimMapper.toDto(claim);
@@ -368,21 +420,30 @@ class ClaimMapperTest {
     autoClaim.setId(8L);
     autoClaim.setPolicy(testPolicy);
     autoClaim.setLicensePlate("LIST-001");
+    autoClaim.setAdjusterReports(new ArrayList<>());
+    autoClaim.setCustomerInvoices(new ArrayList<>());
+    autoClaim.setClaimDecision(null);
 
     HomeClaim homeClaim = new HomeClaim();
     homeClaim.setId(9L);
     homeClaim.setPolicy(testPolicy);
     homeClaim.setTypeOfDamage("Storm damage");
+    homeClaim.setAdjusterReports(new ArrayList<>());
+    homeClaim.setCustomerInvoices(new ArrayList<>());
+    homeClaim.setClaimDecision(null);
 
     HealthClaim healthClaim = new HealthClaim();
     healthClaim.setId(10L);
     healthClaim.setPolicy(testPolicy);
     healthClaim.setMedicalProvider("City Hospital");
+    healthClaim.setAdjusterReports(new ArrayList<>());
+    healthClaim.setCustomerInvoices(new ArrayList<>());
+    healthClaim.setClaimDecision(null);
 
-    java.util.List<Claim> claims = java.util.Arrays.asList(autoClaim, homeClaim, healthClaim);
+    List<Claim> claims = List.of(autoClaim, homeClaim, healthClaim);
 
     // When: Mapping to DTO list - individual mapping since toDtoList may not exist
-    java.util.List<ClaimDto> claimDtos =
+    List<ClaimDto> claimDtos =
         claims.stream()
             .map(
                 claim -> {
@@ -401,20 +462,17 @@ class ClaimMapperTest {
     assertThat(claimDtos).hasSize(3);
 
     // Check AutoClaim mapping - cast to specific type
-    tech.yildirim.insurance.api.generated.model.AutoClaimDto autoClaimDto =
-        (tech.yildirim.insurance.api.generated.model.AutoClaimDto) claimDtos.getFirst();
+    AutoClaimDto autoClaimDto = (AutoClaimDto) claimDtos.getFirst();
     assertThat(autoClaimDto.getId()).isEqualTo(8L);
     assertThat(autoClaimDto.getLicensePlate()).isEqualTo("LIST-001");
 
     // Check HomeClaim mapping - cast to specific type
-    tech.yildirim.insurance.api.generated.model.HomeClaimDto homeClaimDto =
-        (tech.yildirim.insurance.api.generated.model.HomeClaimDto) claimDtos.get(1);
+    HomeClaimDto homeClaimDto = (HomeClaimDto) claimDtos.get(1);
     assertThat(homeClaimDto.getId()).isEqualTo(9L);
     assertThat(homeClaimDto.getTypeOfDamage()).isEqualTo("Storm damage");
 
     // Check HealthClaim mapping - cast to specific type
-    tech.yildirim.insurance.api.generated.model.HealthClaimDto healthClaimDto =
-        (tech.yildirim.insurance.api.generated.model.HealthClaimDto) claimDtos.get(2);
+    HealthClaimDto healthClaimDto = (HealthClaimDto) claimDtos.get(2);
     assertThat(healthClaimDto.getId()).isEqualTo(10L);
     assertThat(healthClaimDto.getMedicalProvider()).isEqualTo("City Hospital");
   }
@@ -428,16 +486,28 @@ class ClaimMapperTest {
     autoClaim.setPolicy(testPolicy);
     autoClaim.setLicensePlate("NULL-TEST");
     // vehicleVin, accidentLocation, assignedAdjuster are null
+    // Initialize empty collections
+    autoClaim.setAdjusterReports(new ArrayList<>());
+    autoClaim.setCustomerInvoices(new ArrayList<>());
+    autoClaim.setClaimDecision(null);
 
     HomeClaim homeClaim = new HomeClaim();
     homeClaim.setId(12L);
     homeClaim.setPolicy(testPolicy);
     // typeOfDamage, damagedItems, assignedAdjuster are null
+    // Initialize empty collections
+    homeClaim.setAdjusterReports(new ArrayList<>());
+    homeClaim.setCustomerInvoices(new ArrayList<>());
+    homeClaim.setClaimDecision(null);
 
     HealthClaim healthClaim = new HealthClaim();
     healthClaim.setId(13L);
     healthClaim.setPolicy(testPolicy);
     // medicalProvider, procedureCode, assignedAdjuster are null
+    // Initialize empty collections
+    healthClaim.setAdjusterReports(new ArrayList<>());
+    healthClaim.setCustomerInvoices(new ArrayList<>());
+    healthClaim.setClaimDecision(null);
 
     // When: Mapping to DTOs
     AutoClaimDto autoClaimDto = claimMapper.toDto(autoClaim);
@@ -477,6 +547,10 @@ class ClaimMapperTest {
     autoClaim.setId(14L);
     autoClaim.setPolicy(testPolicy);
     autoClaim.setLicensePlate("STATUS-TEST");
+    // Initialize empty collections
+    autoClaim.setAdjusterReports(new ArrayList<>());
+    autoClaim.setCustomerInvoices(new ArrayList<>());
+    autoClaim.setClaimDecision(null);
 
     // Test SUBMITTED status
     autoClaim.setStatus(ClaimStatus.SUBMITTED);

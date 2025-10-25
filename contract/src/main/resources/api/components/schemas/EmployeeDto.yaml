@@ -1,5 +1,5 @@
 type: object
-description: "Data Transfer Object for Employee information"
+description: "Data Transfer Object for Employee information (both internal and external adjusters)"
 properties:
   id:
     type: integer
@@ -9,7 +9,7 @@ properties:
   employeeId:
     type: string
     description: "The unique business identifier for the employee"
-    example: "EMP-2025-54321"
+    example: "EMP-1001"
   firstName:
     type: string
     description: "The first name of the employee"
@@ -18,31 +18,59 @@ properties:
     type: string
     description: "The last name of the employee"
     example: "Mustermann"
-  phoneNumber:
-    type: string
-    description: "The employee's contact phone number."
-    example: "+49 123 4567890"
-    nullable: true
   email:
     type: string
     format: email
     description: "The email address of the employee"
     example: "max.mustermann@example.com"
-  password:
+  phoneNumber:
     type: string
-    format: password
-    writeOnly: true
-    description: "Password for the employee's account. Not returned in responses"
-    example: "mysecretpassword"
+    description: "The employee's contact phone number"
+    example: "+49 123 4567890"
   role:
     type: string
     enum: [ UNDERWRITER, CLAIMS_ADJUSTER, CUSTOMER_SUPPORT, MANAGER, ADMIN ]
     description: "The role of the employee"
-    example: "MANAGER"
+    example: "CLAIMS_ADJUSTER"
+  employmentType:
+    type: string
+    enum: [ INTERNAL, EXTERNAL ]
+    description: "Whether the employee is internal staff or external contractor"
+    example: "EXTERNAL"
+  companyName:
+    type: string
+    description: "Company name (for external adjusters) or internal company name"
+    example: "KFZ Gutachter Schmidt GmbH"
+    nullable: true
+  specializationArea:
+    type: string
+    enum: [ AUTO, HOME, HEALTH, LIABILITY ]
+    description: "The policy type that this adjuster specializes in"
+    example: "AUTO"
+    nullable: true
+  availabilityStatus:
+    type: string
+    enum: [ AVAILABLE, BUSY, UNAVAILABLE ]
+    description: "Current availability status of the employee/adjuster"
+    example: "AVAILABLE"
+  createdAt:
+    type: string
+    format: date-time
+    readOnly: true
+    description: "The timestamp when the employee record was created"
+    example: "2025-01-15T10:30:00Z"
+  updatedAt:
+    type: string
+    format: date-time
+    readOnly: true
+    description: "The timestamp when the employee record was last updated"
+    example: "2025-01-20T14:45:00Z"
 required:
   - employeeId
   - firstName
   - lastName
   - email
-  - password
+  - phoneNumber
   - role
+  - employmentType
+  - availabilityStatus

@@ -1,0 +1,36 @@
+get:
+  tags:
+    - Employees
+  summary: "Find available adjusters by specialization area"
+  operationId: "getAvailableAdjustersBySpecialization"
+  parameters:
+    - name: specializationArea
+      in: query
+      required: true
+      description: "The policy type specialization to search for"
+      schema:
+        type: string
+        enum: [ AUTO, HOME, HEALTH, LIABILITY ]
+      example: "AUTO"
+    - name: employmentType
+      in: query
+      required: false
+      description: "Filter by employment type (default: EXTERNAL)"
+      schema:
+        type: string
+        enum: [ INTERNAL, EXTERNAL ]
+        default: EXTERNAL
+      example: "EXTERNAL"
+  responses:
+    '200':
+      description: "List of available adjusters for the specified specialization"
+      content:
+        application/json:
+          schema:
+            type: array
+            items:
+              $ref: '../components/schemas/EmployeeDto.yaml'
+    '400':
+      description: "Invalid specialization area provided"
+    '404':
+      description: "No available adjusters found for the specified specialization"

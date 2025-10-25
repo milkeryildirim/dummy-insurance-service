@@ -1,0 +1,55 @@
+get:
+  tags:
+    - AutoClaims
+  summary: "Get a specific adjuster report for an auto claim"
+  operationId: "getAutoClaimAdjusterReportById"
+  parameters:
+    - $ref: '../openapi.yaml#/components/parameters/ClaimId'
+    - $ref: '../openapi.yaml#/components/parameters/ReportId'
+  responses:
+    '200':
+      description: "Auto claim adjuster report details"
+      content:
+        application/json:
+          schema:
+            $ref: '../components/schemas/AdjusterReportDto.yaml'
+    '404':
+      description: "Auto claim or adjuster report not found"
+
+put:
+  tags:
+    - AutoClaims
+  summary: "Update an adjuster report for an auto claim"
+  operationId: "updateAutoClaimAdjusterReport"
+  parameters:
+    - $ref: '../openapi.yaml#/components/parameters/ClaimId'
+    - $ref: '../openapi.yaml#/components/parameters/ReportId'
+  requestBody:
+    required: true
+    content:
+      application/json:
+        schema:
+          $ref: '../components/schemas/AdjusterReportDto.yaml'
+  responses:
+    '200':
+      description: "Auto claim adjuster report updated successfully"
+      content:
+        application/json:
+          schema:
+            $ref: '../components/schemas/AdjusterReportDto.yaml'
+    '404':
+      description: "Auto claim or adjuster report not found"
+
+delete:
+  tags:
+    - AutoClaims
+  summary: "Delete an adjuster report for an auto claim"
+  operationId: "deleteAutoClaimAdjusterReport"
+  parameters:
+    - $ref: '../openapi.yaml#/components/parameters/ClaimId'
+    - $ref: '../openapi.yaml#/components/parameters/ReportId'
+  responses:
+    '204':
+      description: "Auto claim adjuster report deleted successfully"
+    '404':
+      description: "Auto claim or adjuster report not found"

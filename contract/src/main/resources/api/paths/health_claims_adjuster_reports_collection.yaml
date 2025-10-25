@@ -1,0 +1,52 @@
+get:
+  tags:
+    - HealthClaims
+  summary: "Get all adjuster reports for a health claim"
+  operationId: "getHealthClaimAdjusterReports"
+  parameters:
+    - $ref: '../openapi.yaml#/components/parameters/ClaimId'
+  responses:
+    '200':
+      description: "List of adjuster reports for the health claim"
+      content:
+        application/json:
+          schema:
+            type: array
+            items:
+              $ref: '../components/schemas/AdjusterReportDto.yaml'
+    '404':
+      description: "Health claim not found"
+
+post:
+  tags:
+    - HealthClaims
+  summary: "Create a new adjuster report for a health claim"
+  operationId: "createHealthClaimAdjusterReport"
+  parameters:
+    - $ref: '../openapi.yaml#/components/parameters/ClaimId'
+  requestBody:
+    required: true
+    content:
+      multipart/form-data:
+        schema:
+          type: object
+          properties:
+            report:
+              $ref: '../components/schemas/AdjusterReportDto.yaml'
+            pdfFile:
+              type: string
+              format: binary
+              description: "PDF file containing the adjuster report"
+          required:
+            - report
+  responses:
+    '201':
+      description: "Health claim adjuster report created successfully"
+      content:
+        application/json:
+          schema:
+            $ref: '../components/schemas/AdjusterReportDto.yaml'
+    '400':
+      description: "Invalid input data"
+    '404':
+      description: "Health claim not found"

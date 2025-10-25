@@ -8,6 +8,7 @@ import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import tech.yildirim.insurance.api.generated.model.EmployeeDto;
+import tech.yildirim.insurance.dummy.policy.PolicyType;
 
 /** Implementation of the {@link EmployeeService} interface. */
 @Service
@@ -64,5 +65,30 @@ public class EmployeeServiceImpl implements EmployeeService {
     Employee savedEmployee = employeeRepository.save(employeeToSave);
     log.info("Successfully created employee with id {}", savedEmployee.getId());
     return employeeMapper.toDto(savedEmployee);
+  }
+
+  @Override
+  @Transactional(readOnly = true)
+  public List<EmployeeDto> findAvailableAdjustersBySpecialization(
+      PolicyType specializationArea, EmploymentType employmentType) {
+    log.info(
+        "Request to find available adjusters for specialization: {} and employment type: {}",
+        specializationArea,
+        employmentType);
+
+    List<Employee> availableAdjusters =
+        employeeRepository.findByRoleAndEmploymentTypeAndSpecializationAreaAndAvailabilityStatus(
+            EmployeeRole.CLAIMS_ADJUSTER,
+            employmentType,
+            specializationArea,
+            AvailabilityStatus.AVAILABLE);
+
+    log.info(
+        "Found {} available adjusters for specialization: {} and employment type: {}",
+        availableAdjusters.size(),
+        specializationArea,
+        employmentType);
+
+    return employeeMapper.toDtoList(availableAdjusters);
   }
 }

@@ -1,0 +1,56 @@
+get:
+  summary: "Search partner vendors"
+  description: "Search partner vendors by company name or other criteria"
+  tags:
+    - "Partner Vendors"
+  parameters:
+    - name: companyName
+      in: query
+      description: "Search by company name (partial match)"
+      required: false
+      schema:
+        type: string
+        minLength: 2
+    - name: vendorCode
+      in: query
+      description: "Search by vendor code"
+      required: false
+      schema:
+        type: string
+    - name: vendorType
+      in: query
+      description: "Filter by vendor type"
+      required: false
+      schema:
+        type: string
+        enum:
+          - AUTO_REPAIR
+          - MEDICAL_PROVIDER
+          - CONSTRUCTION_CONTRACTOR
+          - ELECTRICAL_CONTRACTOR
+          - PLUMBING_CONTRACTOR
+          - ROOFING_CONTRACTOR
+          - CLEANING_SERVICE
+          - RESTORATION_SERVICE
+          - LEGAL_SERVICE
+          - TOWING_SERVICE
+          - PARTS_SUPPLIER
+          - OTHER
+    - name: activeOnly
+      in: query
+      description: "Return only active vendors"
+      required: false
+      schema:
+        type: boolean
+        default: false
+  responses:
+    '200':
+      description: "Search results"
+      content:
+        application/json:
+          schema:
+            type: array
+            items:
+              $ref: '../components/schemas/PartnerVendorDto.yaml'
+    '400':
+      description: "Invalid search parameters"

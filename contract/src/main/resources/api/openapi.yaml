@@ -92,6 +92,15 @@ paths:
     $ref: './paths/agencies_collection.yaml'
   /agencies/{id}:
     $ref: './paths/agencies_item.yaml'
+  # Partner Vendors endpoints
+  /partner-vendors:
+    $ref: './paths/partner_vendors_collection.yaml'
+  /partner-vendors/{id}:
+    $ref: './paths/partner_vendors_item.yaml'
+  /partner-vendors/search:
+    $ref: './paths/partner_vendors_search.yaml'
+  /partner-vendors/{id}/status:
+    $ref: './paths/partner_vendors_status.yaml'
 
 # Components and schemas remain the same.
 components:
@@ -126,6 +135,8 @@ components:
       $ref: './components/schemas/CustomerInvoiceDto.yaml'
     ClaimDecisionDto:
       $ref: './components/schemas/ClaimDecisionDto.yaml'
+    PartnerVendorDto:
+      $ref: './components/schemas/PartnerVendorDto.yaml'
   parameters:
     CustomerId:
       name: id
@@ -179,6 +190,14 @@ components:
       name: id
       in: path
       description: "The unique identifier of the agency"
+      required: true
+      schema:
+        type: integer
+        format: int64
+    PartnerVendorId:
+      name: id
+      in: path
+      description: "The unique identifier of the partner vendor"
       required: true
       schema:
         type: integer

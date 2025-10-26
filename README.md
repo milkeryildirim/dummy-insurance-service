@@ -35,7 +35,7 @@ dummy-insurance-service/
 ├── contract/                    # API Contract Module
 │   ├── src/main/resources/api/
 │   │   ├── openapi.yaml        # Main OpenAPI specification
-│   │   ├── components/         # Reusable API components
+│   │   ├── components/         # Reusable API components & schemas
 │   │   └── paths/              # Individual endpoint definitions
 │   └── pom.xml
 ├── application/                 # Main Application Module
@@ -45,11 +45,13 @@ dummy-insurance-service/
 │   │   ├── common/             # Shared utilities and exception handling
 │   │   ├── customer/           # Customer management
 │   │   ├── employee/           # Employee management
-│   │   ├── policy/             # Policy management
+│   │   ├── partner/            # Partner vendor management
+│   │   ├── policy/             # Policy management & conditions
 │   │   └── InsuranceApplication.java
 │   ├── src/main/resources/
 │   │   ├── application.yaml    # Application configuration
 │   │   └── data.sql           # Sample data initialization
+│   ├── uploads/                # File upload storage
 │   └── pom.xml
 └── pom.xml                     # Parent POM
 ```
@@ -69,9 +71,9 @@ dummy-insurance-service/
 * **Language**: Java 21 LTS
 * **Build Tool**: Maven
 * **Database**: H2 In-Memory Database
-* **API Specification**: OpenAPI 3 (with Springdoc)
+* **API Specification**: OpenAPI 3 (with Springdoc OpenAPI 2.8.9)
 * **Data Persistence**: Spring Data JPA / Hibernate
-* **Mapping**: MapStruct
+* **Mapping**: MapStruct 1.5.5.Final
 * **Boilerplate Reduction**: Lombok
 * **Testing**: JUnit 5, Mockito, AssertJ, MockMvc
 * **CI/CD**: GitHub Actions (Maven publish workflow)
@@ -86,21 +88,34 @@ The API provides comprehensive insurance management capabilities across multiple
 
 - **Customers**: Customer registration, profile management, and search functionality
 - **Employees**: Employee management with role-based access (Manager, Claims Adjuster, Underwriter)
+  and availability tracking
 - **Agencies**: Insurance agency management and agent assignments
-- **Policies**: Policy creation, management, and customer policy associations
-- **Claims**: Multi-type claims processing (Auto, Home, Health) with adjuster assignment
+- **Partner Vendors**: External service provider management (repair shops, medical facilities,
+  contractors)
+- **Policies**: Multi-type policy creation (Auto, Home, Health), management, and system-wide policy
+  conditions
+- **Claims**: Comprehensive claims processing with adjuster assignment, file uploads, and decision
+  workflows
 
 ### Available Endpoints
 
-| Domain            | Endpoints                                                                      | Description                  |
-|-------------------|--------------------------------------------------------------------------------|------------------------------|
-| **Customers**     | `/customers`, `/customers/{id}`, `/customers/search`                           | CRUD operations and search   |
-| **Policies**      | `/policies`, `/policies/{id}`, `/policies/search`                              | Policy management and search |
-| **Auto Claims**   | `/auto-claims`, `/auto-claims/{id}`, `/auto-claims/{id}/assign-adjuster`       | Auto insurance claims        |
-| **Home Claims**   | `/home-claims`, `/home-claims/{id}`, `/home-claims/{id}/assign-adjuster`       | Home insurance claims        |
-| **Health Claims** | `/health-claims`, `/health-claims/{id}`, `/health-claims/{id}/assign-adjuster` | Health insurance claims      |
-| **Employees**     | `/employees`, `/employees/{id}`                                                | Employee management          |
-| **Agencies**      | `/agencies`, `/agencies/{id}`                                                  | Agency management            |
+| Domain              | Endpoints                                                                       | Description                            |
+|---------------------|---------------------------------------------------------------------------------|----------------------------------------|
+| **Customers**       | `/customers`, `/customers/{id}`, `/customers/search`                            | CRUD operations and search             |
+| **Policies**        | `/policies`, `/policies/{id}`, `/policies/search`, `/policies/conditions`       | Policy management, search & conditions |
+| **Auto Claims**     | `/claims/auto`, `/claims/auto/{id}`, `/claims/auto/{id}/assign-adjuster`        | Auto insurance claims                  |
+|                     | `/claims/auto/{id}/adjuster-reports`, `/claims/auto/{id}/customer-invoices`     | Reports & invoices with file uploads   |
+|                     | `/claims/auto/{id}/decision`                                                    | Claims decision processing             |
+| **Home Claims**     | `/claims/home`, `/claims/home/{id}`, `/claims/home/{id}/assign-adjuster`        | Home insurance claims                  |
+|                     | `/claims/home/{id}/adjuster-reports`, `/claims/home/{id}/customer-invoices`     | Reports & invoices with file uploads   |
+|                     | `/claims/home/{id}/decision`                                                    | Claims decision processing             |
+| **Health Claims**   | `/claims/health`, `/claims/health/{id}`, `/claims/health/{id}/assign-adjuster`  | Health insurance claims                |
+|                     | `/claims/health/{id}/adjuster-reports`, `/claims/health/{id}/customer-invoices` | Reports & invoices with file uploads   |
+|                     | `/claims/health/{id}/decision`                                                  | Claims decision processing             |
+| **Employees**       | `/employees`, `/employees/{id}`, `/employees/available-adjusters`               | Employee management & adjuster lookup  |
+| **Agencies**        | `/agencies`, `/agencies/{id}`                                                   | Agency management                      |
+| **Partner Vendors** | `/partner-vendors`, `/partner-vendors/{id}`, `/partner-vendors/search`          | External service provider management   |
+|                     | `/partner-vendors/{id}/status`                                                  | Vendor status management               |
 
 ---
 
@@ -204,7 +219,7 @@ Maven to run the `application` module.
 After building, you can also run the application directly from the generated JAR:
 
 ```sh
-java -jar application/target/dummy-insurance-application-0.0.2-SNAPSHOT.jar
+java -jar application/target/dummy-insurance-application-0.0.3-SNAPSHOT.jar
 ```
 
 ### How to Run Tests
@@ -236,18 +251,22 @@ Once the application is running, the API documentation is available via Swagger 
 The application comes with pre-loaded sample data including:
 
 - 3 customers with German addresses and encrypted passwords
-- 4 employees with different roles (Manager, Claims Adjusters, Underwriter)
-- Multiple agencies and policies
-- Sample claims data across all claim types
+- 4 employees with different roles (Manager, Claims Adjusters, Underwriter) and availability status
+- Multiple agencies and partner vendors with various specializations
+- Comprehensive policy data covering Auto, Home, and Health insurance types
+- Sample claims data across all claim types with realistic adjuster reports and customer invoices
 
-### Database Access
+### File Upload Support
 
-The H2 in-memory database console is available for debugging and data inspection:
+The API includes comprehensive file upload capabilities for:
 
-* **H2 Console**: `http://localhost:8080/h2-console`
-    * JDBC URL: `jdbc:h2:mem:insurancedb`
-    * Username: `sa`
-    * Password: (leave blank)
+- **Adjuster Reports**: PDF files for claims assessment documentation
+- **Customer Invoices**: Invoice and receipt uploads for claims processing
+- **File Validation**: MIME type checking and PDF header validation
+- **Storage**: Local file system storage in the `uploads/` directory with organized subdirectories
+
+Upload endpoints support multipart/form-data with proper error handling for invalid file types and
+sizes.
 
 ---
 
@@ -302,7 +321,7 @@ To use the published contract artifact in other projects, add this dependency to
 <dependency>
   <groupId>tech.yildirim</groupId>
   <artifactId>dummy-insurance-api-contract</artifactId>
-  <version>0.0.2-SNAPSHOT</version>
+  <version>0.0.3-SNAPSHOT</version>
 </dependency>
 ```
 

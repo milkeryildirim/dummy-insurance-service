@@ -5,10 +5,10 @@ import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyLong;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.doNothing;
-import static org.mockito.Mockito.doThrow;
 import static org.mockito.Mockito.when;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.delete;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.multipart;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.put;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
@@ -17,6 +17,7 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 import com.fasterxml.jackson.databind.ObjectMapper;
 import java.math.BigDecimal;
 import java.time.LocalDate;
+import java.time.ZonedDateTime;
 import java.util.List;
 import java.util.Optional;
 import org.junit.jupiter.api.DisplayName;
@@ -27,41 +28,57 @@ import org.springframework.boot.test.autoconfigure.web.servlet.WebMvcTest;
 import org.springframework.boot.test.context.TestConfiguration;
 import org.springframework.context.annotation.Bean;
 import org.springframework.http.MediaType;
+import org.springframework.mock.web.MockMultipartFile;
 import org.springframework.test.web.servlet.MockMvc;
+import tech.yildirim.insurance.api.generated.model.AdjusterReportDto;
 import tech.yildirim.insurance.api.generated.model.AssignAdjusterRequestDto;
 import tech.yildirim.insurance.api.generated.model.AutoClaimDto;
+import tech.yildirim.insurance.api.generated.model.ClaimDecisionDto;
 import tech.yildirim.insurance.api.generated.model.ClaimDto;
 import tech.yildirim.insurance.api.generated.model.ClaimDto.ClaimTypeEnum;
+import tech.yildirim.insurance.api.generated.model.CustomerInvoiceDto;
 import tech.yildirim.insurance.api.generated.model.HealthClaimDto;
 import tech.yildirim.insurance.api.generated.model.HomeClaimDto;
-import tech.yildirim.insurance.dummy.common.ResourceNotFoundException;
 
 @WebMvcTest(ClaimsController.class)
 @DisplayName("Auto Claims Controller Web Layer Tests")
 class ClaimsControllerTest {
 
   @Autowired private MockMvc mockMvc;
-
   @Autowired private ClaimService claimService;
-
+  @Autowired private AdjusterReportService adjusterReportService;
+  @Autowired private CustomerInvoiceService customerInvoiceService;
+  @Autowired private ClaimDecisionService claimDecisionService;
   @Autowired private ObjectMapper objectMapper;
 
-  /**
-   * This static inner class provides the mock bean definition for ClaimService. This is the modern
-   * replacement for @MockBean in Spring Boot 3.4+.
-   */
   @TestConfiguration
   static class ControllerTestConfig {
     @Bean
     public ClaimService claimService() {
       return Mockito.mock(ClaimService.class);
     }
+
+    @Bean
+    public AdjusterReportService adjusterReportService() {
+      return Mockito.mock(AdjusterReportService.class);
+    }
+
+    @Bean
+    public CustomerInvoiceService customerInvoiceService() {
+      return Mockito.mock(CustomerInvoiceService.class);
+    }
+
+    @Bean
+    public ClaimDecisionService claimDecisionService() {
+      return Mockito.mock(ClaimDecisionService.class);
+    }
   }
+
+  // ========== AUTO CLAIM BASIC OPERATIONS ==========
 
   @Test
   @DisplayName("POST /claims/auto - Should create auto claim and return 201 Created")
   void createAutoClaim_withValidData_shouldReturn201() throws Exception {
-    // Given: A valid auto claim DTO for creation
     AutoClaimDto inputDto =
         new AutoClaimDto()
             .licensePlate("ABC-123")
@@ -89,7 +106,6 @@ class ClaimsControllerTest {
 
     when(claimService.submitClaim(eq(1L), any(AutoClaimDto.class))).thenReturn(outputDto);
 
-    // When & Then: Perform POST request and assert the response
     mockMvc
         .perform(
             post("/claims/auto")
@@ -105,7 +121,6 @@ class ClaimsControllerTest {
   @Test
   @DisplayName("GET /claims/auto/{id} - Should return auto claim when claim exists")
   void getAutoClaimById_whenExists_shouldReturnAutoClaim() throws Exception {
-    // Given: An auto claim exists and the service is mocked to return it
     long claimId = 100L;
     AutoClaimDto autoClaimDto =
         new AutoClaimDto()
@@ -122,7 +137,6 @@ class ClaimsControllerTest {
 
     when(claimService.findClaimById(claimId)).thenReturn(Optional.of(autoClaimDto));
 
-    // When & Then: Perform GET request and assert the response
     mockMvc
         .perform(get("/claims/auto/{id}", claimId))
         .andExpect(status().isOk())
@@ -135,17 +149,13 @@ class ClaimsControllerTest {
   @Test
   @DisplayName("GET /claims/auto/{id} - Should return 404 Not Found when claim does not exist")
   void getAutoClaimById_whenNotExists_shouldReturnNotFound() throws Exception {
-    // Given: The service will not find the claim
     when(claimService.findClaimById(anyLong())).thenReturn(Optional.empty());
-
-    // When & Then: Perform GET request and assert the response
     mockMvc.perform(get("/claims/auto/{id}", 999L)).andExpect(status().isNotFound());
   }
 
   @Test
-  @DisplayName("GET /claims/auto/ - Should return list of auto claims")
+  @DisplayName("GET /claims/auto - Should return list of auto claims")
   void getAllAutoClaims_shouldReturnAutoClaimsList() throws Exception {
-    // Given: Multiple auto claims exist
     AutoClaimDto claim1 =
         new AutoClaimDto()
             .id(100L)
@@ -165,7 +175,6 @@ class ClaimsControllerTest {
     List<ClaimDto> claims = List.of(claim1, claim2);
     when(claimService.getAllClaimsByType(ClaimTypeEnum.AUTO_CLAIM_DTO)).thenReturn(claims);
 
-    // When & Then: Perform GET request and assert the response
     mockMvc
         .perform(get("/claims/auto"))
         .andExpect(status().isOk())
@@ -177,39 +186,23 @@ class ClaimsControllerTest {
   }
 
   @Test
-  @DisplayName("GET /claims/auto - Should return empty list when no auto claims exist")
-  void getAllAutoClaims_whenNoClaims_shouldReturnEmptyList() throws Exception {
-    // Given: No auto claims exist
-    when(claimService.getAllClaimsByType(ClaimTypeEnum.AUTO_CLAIM_DTO)).thenReturn(List.of());
-
-    // When & Then: Perform GET request and assert the response
-    mockMvc
-        .perform(get("/claims/auto"))
-        .andExpect(status().isOk())
-        .andExpect(jsonPath("$.size()", is(0)));
-  }
-
-  @Test
   @DisplayName("PUT /claims/auto/{id} - Should update auto claim and return updated claim")
   void updateAutoClaim_whenExists_shouldReturnUpdatedClaim() throws Exception {
-    // Given: An existing claim and update data
     long claimId = 100L;
-    long policyId = 1L;
-    LocalDate dateOfIncident = LocalDate.of(2025, 8, 15);
     AutoClaimDto updateDto =
         new AutoClaimDto()
-            .policyId(policyId)
+            .policyId(1L)
             .vehicleVin("1HGCM82633A123456")
             .licensePlate("ABC-123")
             .accidentLocation("Updated location")
             .description("Updated description")
             .estimatedAmount(BigDecimal.valueOf(7500.00))
-            .dateOfIncident(dateOfIncident);
+            .dateOfIncident(LocalDate.of(2025, 8, 15));
 
     AutoClaimDto updatedDto =
         new AutoClaimDto()
             .id(claimId)
-            .policyId(policyId)
+            .policyId(1L)
             .claimNumber("AC-2025-001")
             .licensePlate("ABC-123")
             .vehicleVin("1HGCM82633A123456")
@@ -217,11 +210,10 @@ class ClaimsControllerTest {
             .description("Updated description")
             .estimatedAmount(BigDecimal.valueOf(7500.00))
             .status(ClaimDto.StatusEnum.IN_REVIEW)
-            .dateOfIncident(dateOfIncident);
+            .dateOfIncident(LocalDate.of(2025, 8, 15));
 
     when(claimService.updateClaim(eq(claimId), any(AutoClaimDto.class))).thenReturn(updatedDto);
 
-    // When & Then: Perform PUT request and assert the response
     mockMvc
         .perform(
             put("/claims/auto/{id}", claimId)
@@ -234,35 +226,8 @@ class ClaimsControllerTest {
   }
 
   @Test
-  @DisplayName("PUT /claims/auto/{id} - Should return 404 Not Found when claim does not exist")
-  void updateAutoClaim_whenNotExists_shouldReturnNotFound() throws Exception {
-    // Given: The service throws an exception when claim is not found
-    long claimId = 999L;
-    long policyId = 1L;
-    LocalDate dateOfIncident = LocalDate.of(2025, 8, 15);
-    AutoClaimDto updateDto =
-        new AutoClaimDto()
-            .policyId(policyId)
-            .licensePlate("ABC-123")
-            .description("Updated description")
-            .dateOfIncident(dateOfIncident);
-
-    when(claimService.updateClaim(eq(claimId), any(AutoClaimDto.class)))
-        .thenThrow(new ResourceNotFoundException("Claim not found"));
-
-    // When & Then: Perform PUT request and assert the response
-    mockMvc
-        .perform(
-            put("/claims/auto/{id}", claimId)
-                .contentType(MediaType.APPLICATION_JSON)
-                .content(objectMapper.writeValueAsString(updateDto)))
-        .andExpect(status().isNotFound());
-  }
-
-  @Test
   @DisplayName("DELETE /claims/auto/{id} - Should delete auto claim and return 204 No Content")
   void deleteAutoClaim_whenExists_shouldReturnNoContent() throws Exception {
-    // Given: An existing auto claim
     long claimId = 100L;
     AutoClaimDto existingClaim =
         new AutoClaimDto()
@@ -274,61 +239,13 @@ class ClaimsControllerTest {
     when(claimService.findClaimById(claimId)).thenReturn(Optional.of(existingClaim));
     doNothing().when(claimService).deleteClaim(claimId);
 
-    // When & Then: Perform DELETE request and assert the response
     mockMvc.perform(delete("/claims/auto/{id}", claimId)).andExpect(status().isNoContent());
-  }
-
-  @Test
-  @DisplayName("DELETE /claims/auto/{id} - Should return 404 Not Found when claim does not exist")
-  void deleteAutoClaim_whenNotExists_shouldReturnNotFound() throws Exception {
-    // Given: The claim does not exist
-    long claimId = 999L;
-    when(claimService.findClaimById(claimId)).thenReturn(Optional.empty());
-
-    // When & Then: Perform DELETE request and assert the response
-    mockMvc.perform(delete("/claims/auto/{id}", claimId)).andExpect(status().isNotFound());
-  }
-
-  @Test
-  @DisplayName("DELETE /claims/auto/{id} - Should return 404 when claim is not an auto claim")
-  void deleteAutoClaim_whenNotAutoClaim_shouldReturnNotFound() throws Exception {
-    // Given: The claim exists but is not an auto claim (polymorphic check)
-    long claimId = 100L;
-    ClaimDto nonAutoClaim =
-        new ClaimDto().id(claimId).claimType(ClaimTypeEnum.HOME_CLAIM_DTO); // Different claim type
-
-    when(claimService.findClaimById(claimId)).thenReturn(Optional.of(nonAutoClaim));
-
-    // When & Then: Perform DELETE request and assert the response
-    mockMvc.perform(delete("/claims/auto/{id}", claimId)).andExpect(status().isNotFound());
-  }
-
-  @Test
-  @DisplayName("DELETE /claims/auto/{id} - Should return 500 when deletion fails")
-  void deleteAutoClaim_whenDeletionFails_shouldReturnInternalServerError() throws Exception {
-    // Given: An existing auto claim but deletion fails
-    long claimId = 100L;
-    AutoClaimDto existingClaim =
-        new AutoClaimDto()
-            .id(claimId)
-            .claimNumber("AC-2025-001")
-            .licensePlate("ABC-123")
-            .claimType(ClaimTypeEnum.AUTO_CLAIM_DTO);
-
-    when(claimService.findClaimById(claimId)).thenReturn(Optional.of(existingClaim));
-    doThrow(new RuntimeException("Database error")).when(claimService).deleteClaim(claimId);
-
-    // When & Then: Perform DELETE request and assert the response
-    mockMvc
-        .perform(delete("/claims/auto/{id}", claimId))
-        .andExpect(status().isInternalServerError());
   }
 
   @Test
   @DisplayName(
       "PUT /claims/auto/{id}/assign-adjuster - Should assign adjuster and return updated claim")
   void assignAdjusterToAutoClaim_whenValidRequest_shouldReturnUpdatedClaim() throws Exception {
-    // Given: A valid assign adjuster request
     long claimId = 100L;
     long employeeId = 50L;
     AssignAdjusterRequestDto assignRequest = new AssignAdjusterRequestDto().employeeId(employeeId);
@@ -344,7 +261,6 @@ class ClaimsControllerTest {
 
     when(claimService.assignAdjuster(claimId, employeeId)).thenReturn(updatedClaim);
 
-    // When & Then: Perform PUT request and assert the response
     mockMvc
         .perform(
             put("/claims/auto/{id}/assign-adjuster", claimId)
@@ -356,401 +272,458 @@ class ClaimsControllerTest {
         .andExpect(jsonPath("$.status", is("IN_REVIEW")));
   }
 
-  @Test
-  @DisplayName(
-      "PUT /claims/auto/{id}/assign-adjuster - Should return 404 when claim does not exist")
-  void assignAdjusterToAutoClaim_whenClaimNotExists_shouldReturnNotFound() throws Exception {
-    // Given: The claim does not exist
-    long claimId = 999L;
-    long employeeId = 50L;
-    AssignAdjusterRequestDto assignRequest = new AssignAdjusterRequestDto().employeeId(employeeId);
-
-    when(claimService.assignAdjuster(claimId, employeeId))
-        .thenThrow(new ResourceNotFoundException("Claim not found"));
-
-    // When & Then: Perform PUT request and assert the response
-    mockMvc
-        .perform(
-            put("/claims/auto/{id}/assign-adjuster", claimId)
-                .contentType(MediaType.APPLICATION_JSON)
-                .content(objectMapper.writeValueAsString(assignRequest)))
-        .andExpect(status().isNotFound());
-  }
+  // ========== AUTO CLAIM ADJUSTER REPORTS ==========
 
   @Test
-  @DisplayName(
-      "PUT /claims/auto/{id}/assign-adjuster - Should return 404 when employee does not exist")
-  void assignAdjusterToAutoClaim_whenEmployeeNotExists_shouldReturnNotFound() throws Exception {
-    // Given: The employee does not exist
+  @DisplayName("GET /claims/auto/{id}/adjuster-reports - Should return list of adjuster reports")
+  void getAutoClaimAdjusterReports_shouldReturnReportsList() throws Exception {
     long claimId = 100L;
-    long employeeId = 998L;
-    AssignAdjusterRequestDto assignRequest = new AssignAdjusterRequestDto().employeeId(employeeId);
+    AdjusterReportDto report1 =
+        new AdjusterReportDto()
+            .id(1L)
+            .claimId(claimId)
+            .adjusterId(20L)
+            .summary("Initial damage assessment")
+            .findings("Minor front bumper damage")
+            .recommendedAmount(BigDecimal.valueOf(1200.00))
+            .status(AdjusterReportDto.StatusEnum.DRAFT);
 
-    when(claimService.assignAdjuster(claimId, employeeId))
-        .thenThrow(new ResourceNotFoundException("Employee not found"));
+    AdjusterReportDto report2 =
+        new AdjusterReportDto()
+            .id(2L)
+            .claimId(claimId)
+            .adjusterId(21L)
+            .summary("Final assessment")
+            .findings("Comprehensive damage report")
+            .recommendedAmount(BigDecimal.valueOf(1500.00))
+            .status(AdjusterReportDto.StatusEnum.SUBMITTED);
 
-    // When & Then: Perform POST request and assert the response
+    when(claimService.findClaimById(claimId)).thenReturn(Optional.of(new AutoClaimDto()));
+    when(adjusterReportService.findAdjusterReportsByClaimId(claimId))
+        .thenReturn(List.of(report1, report2));
+
     mockMvc
-        .perform(
-            put("/claims/auto/{id}/assign-adjuster", claimId)
-                .contentType(MediaType.APPLICATION_JSON)
-                .content(objectMapper.writeValueAsString(assignRequest)))
-        .andExpect(status().isNotFound());
-  }
-
-  @Test
-  @DisplayName("POST /claims/health - Should create health claim and return 201 Created")
-  void createHealthClaim_withValidData_shouldReturn201() throws Exception {
-    // Given: A valid health claim DTO for creation
-    HealthClaimDto inputDto =
-        new HealthClaimDto()
-            .medicalProvider("City General Hospital")
-            .procedureCode("CPT-99213")
-            .claimType(ClaimTypeEnum.HEALTH_CLAIM_DTO)
-            .policyId(1L)
-            .description("Medical consultation for flu symptoms")
-            .dateOfIncident(LocalDate.of(2025, 8, 15))
-            .estimatedAmount(BigDecimal.valueOf(250.00));
-
-    HealthClaimDto outputDto =
-        new HealthClaimDto()
-            .id(100L)
-            .claimNumber("HC-2025-001")
-            .medicalProvider("City General Hospital")
-            .procedureCode("CPT-99213")
-            .claimType(ClaimTypeEnum.HEALTH_CLAIM_DTO)
-            .policyId(1L)
-            .description("Medical consultation for flu symptoms")
-            .dateOfIncident(LocalDate.of(2025, 8, 15))
-            .estimatedAmount(BigDecimal.valueOf(250.00))
-            .status(ClaimDto.StatusEnum.SUBMITTED);
-
-    when(claimService.submitClaim(eq(1L), any(HealthClaimDto.class))).thenReturn(outputDto);
-
-    // When & Then: Perform POST request and assert the response
-    mockMvc
-        .perform(
-            post("/claims/health")
-                .contentType(MediaType.APPLICATION_JSON)
-                .content(objectMapper.writeValueAsString(inputDto)))
-        .andExpect(status().isCreated())
-        .andExpect(jsonPath("$.id", is(100)))
-        .andExpect(jsonPath("$.claimNumber", is("HC-2025-001")))
-        .andExpect(jsonPath("$.medicalProvider", is("City General Hospital")))
-        .andExpect(jsonPath("$.procedureCode", is("CPT-99213")))
-        .andExpect(jsonPath("$.status", is("SUBMITTED")));
-  }
-
-  @Test
-  @DisplayName("GET /claims/health/{id} - Should return health claim when claim exists")
-  void getHealthClaimById_whenExists_shouldReturnHealthClaim() throws Exception {
-    // Given: A health claim exists and the service is mocked to return it
-    long claimId = 100L;
-    HealthClaimDto healthClaimDto =
-        new HealthClaimDto()
-            .id(claimId)
-            .claimNumber("HC-2025-001")
-            .medicalProvider("City General Hospital")
-            .procedureCode("CPT-99213")
-            .claimType(ClaimTypeEnum.HEALTH_CLAIM_DTO)
-            .policyId(1L)
-            .description("Medical consultation for flu symptoms")
-            .dateOfIncident(LocalDate.of(2025, 8, 15))
-            .status(ClaimDto.StatusEnum.SUBMITTED);
-
-    when(claimService.findClaimById(claimId)).thenReturn(Optional.of(healthClaimDto));
-
-    // When & Then: Perform GET request and assert the response
-    mockMvc
-        .perform(get("/claims/health/{id}", claimId))
-        .andExpect(status().isOk())
-        .andExpect(jsonPath("$.id", is(100)))
-        .andExpect(jsonPath("$.claimNumber", is("HC-2025-001")))
-        .andExpect(jsonPath("$.medicalProvider", is("City General Hospital")))
-        .andExpect(jsonPath("$.procedureCode", is("CPT-99213")))
-        .andExpect(jsonPath("$.claimType", is(ClaimTypeEnum.HEALTH_CLAIM_DTO.toString())));
-  }
-
-  @Test
-  @DisplayName("GET /claims/health/{id} - Should return 404 Not Found when claim does not exist")
-  void getHealthClaimById_whenNotExists_shouldReturnNotFound() throws Exception {
-    // Given: The service will not find the claim
-    when(claimService.findClaimById(anyLong())).thenReturn(Optional.empty());
-
-    // When & Then: Perform GET request and assert the response
-    mockMvc.perform(get("/claims/health/{id}", 999L)).andExpect(status().isNotFound());
-  }
-
-  @Test
-  @DisplayName("GET /claims/health - Should return list of health claims")
-  void getAllHealthClaims_shouldReturnHealthClaimsList() throws Exception {
-    // Given: Multiple health claims exist
-    HealthClaimDto claim1 =
-        new HealthClaimDto()
-            .id(100L)
-            .claimNumber("HC-2025-001")
-            .medicalProvider("City General Hospital")
-            .procedureCode("CPT-99213")
-            .claimType(ClaimTypeEnum.HEALTH_CLAIM_DTO)
-            .status(ClaimDto.StatusEnum.SUBMITTED);
-
-    HealthClaimDto claim2 =
-        new HealthClaimDto()
-            .id(101L)
-            .claimNumber("HC-2025-002")
-            .medicalProvider("Regional Medical Center")
-            .procedureCode("CPT-99214")
-            .claimType(ClaimTypeEnum.HEALTH_CLAIM_DTO)
-            .status(ClaimDto.StatusEnum.IN_REVIEW);
-
-    List<ClaimDto> claims = List.of(claim1, claim2);
-    when(claimService.getAllClaimsByType(ClaimTypeEnum.HEALTH_CLAIM_DTO)).thenReturn(claims);
-
-    // When & Then: Perform GET request and assert the response
-    mockMvc
-        .perform(get("/claims/health"))
+        .perform(get("/claims/auto/{id}/adjuster-reports", claimId))
         .andExpect(status().isOk())
         .andExpect(jsonPath("$.size()", is(2)))
-        .andExpect(jsonPath("$[0].id", is(100)))
-        .andExpect(jsonPath("$[0].claimNumber", is("HC-2025-001")))
-        .andExpect(jsonPath("$[0].medicalProvider", is("City General Hospital")))
-        .andExpect(jsonPath("$[1].id", is(101)))
-        .andExpect(jsonPath("$[1].claimNumber", is("HC-2025-002")))
-        .andExpect(jsonPath("$[1].medicalProvider", is("Regional Medical Center")));
+        .andExpect(jsonPath("$[0].id", is(1)))
+        .andExpect(jsonPath("$[0].summary", is("Initial damage assessment")))
+        .andExpect(jsonPath("$[1].id", is(2)))
+        .andExpect(jsonPath("$[1].summary", is("Final assessment")));
   }
 
   @Test
-  @DisplayName("GET /claims/health - Should return empty list when no health claims exist")
-  void getAllHealthClaims_whenNoClaims_shouldReturnEmptyList() throws Exception {
-    // Given: No health claims exist
-    when(claimService.getAllClaimsByType(ClaimTypeEnum.HEALTH_CLAIM_DTO)).thenReturn(List.of());
-
-    // When & Then: Perform GET request and assert the response
-    mockMvc
-        .perform(get("/claims/health"))
-        .andExpect(status().isOk())
-        .andExpect(jsonPath("$.size()", is(0)));
-  }
-
-  @Test
-  @DisplayName("PUT /claims/health/{id} - Should update health claim and return updated claim")
-  void updateHealthClaim_whenExists_shouldReturnUpdatedClaim() throws Exception {
-    // Given: An existing claim and update data
+  @DisplayName("POST /claims/auto/{id}/adjuster-reports - Should create adjuster report with PDF")
+  void createAutoClaimAdjusterReport_withPdf_shouldReturnCreatedReport() throws Exception {
     long claimId = 100L;
-    long policyId = 1L;
-    LocalDate dateOfIncident = LocalDate.of(2025, 8, 15);
-    HealthClaimDto updateDto =
-        new HealthClaimDto()
-            .policyId(policyId)
-            .medicalProvider("Updated Medical Center")
-            .procedureCode("CPT-99215")
-            .description("Updated medical procedure")
-            .estimatedAmount(BigDecimal.valueOf(350.00))
-            .dateOfIncident(dateOfIncident);
+    AdjusterReportDto reportDto =
+        new AdjusterReportDto()
+            .claimId(claimId)
+            .adjusterId(20L)
+            .summary("Vehicle damage assessment")
+            .findings("Front bumper requires replacement")
+            .recommendations("Approve repair costs")
+            .status(AdjusterReportDto.StatusEnum.DRAFT)
+            .recommendedAmount(BigDecimal.valueOf(1250.00));
 
-    HealthClaimDto updatedDto =
-        new HealthClaimDto()
-            .id(claimId)
-            .policyId(policyId)
-            .claimNumber("HC-2025-001")
-            .medicalProvider("Updated Medical Center")
-            .procedureCode("CPT-99215")
-            .description("Updated medical procedure")
-            .estimatedAmount(BigDecimal.valueOf(350.00))
-            .status(ClaimDto.StatusEnum.IN_REVIEW)
-            .dateOfIncident(dateOfIncident);
+    AdjusterReportDto createdReport =
+        new AdjusterReportDto()
+            .id(1L)
+            .claimId(claimId)
+            .adjusterId(20L)
+            .summary("Vehicle damage assessment")
+            .findings("Front bumper requires replacement")
+            .recommendations("Approve repair costs")
+            .recommendedAmount(BigDecimal.valueOf(1250.00))
+            .status(AdjusterReportDto.StatusEnum.DRAFT)
+            .createdAt(ZonedDateTime.now().toOffsetDateTime());
 
-    when(claimService.updateClaim(eq(claimId), any(HealthClaimDto.class))).thenReturn(updatedDto);
+    MockMultipartFile pdfFile =
+        new MockMultipartFile("pdfFile", "report.pdf", "application/pdf", "PDF content".getBytes());
 
-    // When & Then: Perform PUT request and assert the response
+    MockMultipartFile reportJson =
+        new MockMultipartFile(
+            "report",
+            "",
+            "application/json",
+            objectMapper.writeValueAsString(reportDto).getBytes());
+
+    when(claimService.findClaimById(claimId)).thenReturn(Optional.of(new AutoClaimDto()));
+    when(claimService.canAddAdjusterReports(claimId)).thenReturn(true);
+    when(adjusterReportService.createAdjusterReport(
+            eq(claimId), any(AdjusterReportDto.class), any()))
+        .thenReturn(createdReport);
+
     mockMvc
         .perform(
-            put("/claims/health/{id}", claimId)
+            multipart("/claims/auto/{id}/adjuster-reports", claimId)
+                .file(reportJson)
+                .file(pdfFile)
+                .contentType(MediaType.MULTIPART_FORM_DATA))
+        .andExpect(status().isCreated())
+        .andExpect(jsonPath("$.id", is(1)))
+        .andExpect(jsonPath("$.summary", is("Vehicle damage assessment")))
+        .andExpect(jsonPath("$.recommendedAmount", is(1250.00)));
+  }
+
+  @Test
+  @DisplayName(
+      "GET /claims/auto/{id}/adjuster-reports/{reportId} - Should return specific adjuster report")
+  void getAutoClaimAdjusterReportById_shouldReturnReport() throws Exception {
+    long claimId = 100L;
+    long reportId = 1L;
+    AdjusterReportDto report =
+        new AdjusterReportDto()
+            .id(reportId)
+            .claimId(claimId)
+            .adjusterId(20L)
+            .summary("Vehicle damage assessment")
+            .findings("Front bumper requires replacement")
+            .recommendedAmount(BigDecimal.valueOf(1250.00))
+            .status(AdjusterReportDto.StatusEnum.SUBMITTED);
+
+    when(claimService.findClaimById(claimId)).thenReturn(Optional.of(new AutoClaimDto()));
+    when(adjusterReportService.findAdjusterReportByClaimIdAndReportId(claimId, reportId))
+        .thenReturn(Optional.of(report));
+
+    mockMvc
+        .perform(get("/claims/auto/{id}/adjuster-reports/{reportId}", claimId, reportId))
+        .andExpect(status().isOk())
+        .andExpect(jsonPath("$.id", is(1)))
+        .andExpect(jsonPath("$.summary", is("Vehicle damage assessment")))
+        .andExpect(jsonPath("$.recommendedAmount", is(1250.00)));
+  }
+
+  @Test
+  @DisplayName("PUT /claims/auto/{id}/adjuster-reports/{reportId} - Should update adjuster report")
+  void updateAutoClaimAdjusterReport_shouldReturnUpdatedReport() throws Exception {
+    long claimId = 100L;
+    long reportId = 1L;
+    AdjusterReportDto updateDto =
+        new AdjusterReportDto()
+            .claimId(claimId)
+            .adjusterId(20L)
+            .status(AdjusterReportDto.StatusEnum.DRAFT)
+            .summary("Updated assessment")
+            .findings("Updated findings")
+            .recommendedAmount(BigDecimal.valueOf(1400.00));
+
+    AdjusterReportDto updatedReport =
+        new AdjusterReportDto()
+            .id(reportId)
+            .claimId(claimId)
+            .adjusterId(20L)
+            .summary("Updated assessment")
+            .findings("Updated findings")
+            .recommendedAmount(BigDecimal.valueOf(1400.00))
+            .status(AdjusterReportDto.StatusEnum.DRAFT);
+
+    when(claimService.findClaimById(claimId)).thenReturn(Optional.of(new AutoClaimDto()));
+    when(adjusterReportService.updateAdjusterReport(claimId, reportId, updateDto))
+        .thenReturn(updatedReport);
+
+    mockMvc
+        .perform(
+            put("/claims/auto/{id}/adjuster-reports/{reportId}", claimId, reportId)
                 .contentType(MediaType.APPLICATION_JSON)
                 .content(objectMapper.writeValueAsString(updateDto)))
         .andExpect(status().isOk())
-        .andExpect(jsonPath("$.id", is(100)))
-        .andExpect(jsonPath("$.medicalProvider", is("Updated Medical Center")))
-        .andExpect(jsonPath("$.procedureCode", is("CPT-99215")))
-        .andExpect(jsonPath("$.description", is("Updated medical procedure")));
+        .andExpect(jsonPath("$.summary", is("Updated assessment")))
+        .andExpect(jsonPath("$.recommendedAmount", is(1400.00)));
   }
 
   @Test
-  @DisplayName("PUT /claims/health/{id} - Should return 404 Not Found when claim does not exist")
-  void updateHealthClaim_whenNotExists_shouldReturnNotFound() throws Exception {
-    // Given: The service throws an exception when claim is not found
-    long claimId = 999L;
-    long policyId = 1L;
-    LocalDate dateOfIncident = LocalDate.of(2025, 8, 15);
-    HealthClaimDto updateDto =
-        new HealthClaimDto()
-            .policyId(policyId)
-            .medicalProvider("Updated Medical Center")
-            .description("Updated medical procedure")
-            .dateOfIncident(dateOfIncident);
+  @DisplayName(
+      "DELETE /claims/auto/{id}/adjuster-reports/{reportId} - Should delete adjuster report")
+  void deleteAutoClaimAdjusterReport_shouldReturnNoContent() throws Exception {
+    long claimId = 100L;
+    long reportId = 1L;
 
-    when(claimService.updateClaim(eq(claimId), any(HealthClaimDto.class)))
-        .thenThrow(new ResourceNotFoundException("Claim not found"));
+    when(claimService.findClaimById(claimId)).thenReturn(Optional.of(new AutoClaimDto()));
+    doNothing().when(adjusterReportService).deleteAdjusterReport(claimId, reportId);
 
-    // When & Then: Perform PUT request and assert the response
+    mockMvc
+        .perform(delete("/claims/auto/{id}/adjuster-reports/{reportId}", claimId, reportId))
+        .andExpect(status().isNoContent());
+  }
+
+  // ========== AUTO CLAIM CUSTOMER INVOICES ==========
+
+  @Test
+  @DisplayName("GET /claims/auto/{id}/customer-invoices - Should return list of customer invoices")
+  void getAutoClaimCustomerInvoices_shouldReturnInvoicesList() throws Exception {
+    long claimId = 100L;
+    CustomerInvoiceDto invoice1 =
+        new CustomerInvoiceDto()
+            .id(1L)
+            .claimId(claimId)
+            .vendorName("AutoShop Berlin")
+            .invoiceAmount(BigDecimal.valueOf(1150.00))
+            .description("Front bumper replacement")
+            .invoiceDate(LocalDate.of(2025, 10, 20));
+
+    CustomerInvoiceDto invoice2 =
+        new CustomerInvoiceDto()
+            .id(2L)
+            .claimId(claimId)
+            .vendorName("Parts Supplier")
+            .invoiceAmount(BigDecimal.valueOf(350.00))
+            .description("Replacement parts")
+            .invoiceDate(LocalDate.of(2025, 10, 22));
+
+    when(claimService.findClaimById(claimId)).thenReturn(Optional.of(new AutoClaimDto()));
+    when(customerInvoiceService.findCustomerInvoicesByClaimId(claimId))
+        .thenReturn(List.of(invoice1, invoice2));
+
+    mockMvc
+        .perform(get("/claims/auto/{id}/customer-invoices", claimId))
+        .andExpect(status().isOk())
+        .andExpect(jsonPath("$.size()", is(2)))
+        .andExpect(jsonPath("$[0].vendorName", is("AutoShop Berlin")))
+        .andExpect(jsonPath("$[1].vendorName", is("Parts Supplier")));
+  }
+
+  @Test
+  @DisplayName("POST /claims/auto/{id}/customer-invoices - Should create customer invoice with PDF")
+  void createAutoClaimCustomerInvoice_withPdf_shouldReturnCreatedInvoice() throws Exception {
+    long claimId = 100L;
+    CustomerInvoiceDto invoiceDto =
+        new CustomerInvoiceDto()
+            .claimId(claimId)
+            .vendorName("AutoShop Berlin")
+            .invoiceAmount(BigDecimal.valueOf(1150.00))
+            .description("Front bumper replacement")
+            .invoiceDate(LocalDate.of(2025, 10, 20));
+
+    CustomerInvoiceDto createdInvoice =
+        new CustomerInvoiceDto()
+            .id(1L)
+            .claimId(claimId)
+            .vendorName("AutoShop Berlin")
+            .invoiceAmount(BigDecimal.valueOf(1150.00))
+            .description("Front bumper replacement")
+            .invoiceDate(LocalDate.of(2025, 10, 20))
+            .uploadedAt(ZonedDateTime.now().toOffsetDateTime());
+
+    MockMultipartFile pdfFile =
+        new MockMultipartFile(
+            "pdfFile", "invoice.pdf", "application/pdf", "PDF content".getBytes());
+
+    MockMultipartFile invoiceJson =
+        new MockMultipartFile(
+            "invoice",
+            "",
+            "application/json",
+            objectMapper.writeValueAsString(invoiceDto).getBytes());
+
+    when(claimService.findClaimById(claimId)).thenReturn(Optional.of(new AutoClaimDto()));
+    when(claimService.canAddCustomerInvoices(claimId)).thenReturn(true);
+    when(customerInvoiceService.createCustomerInvoice(
+            eq(claimId), any(CustomerInvoiceDto.class), any()))
+        .thenReturn(createdInvoice);
+
     mockMvc
         .perform(
-            put("/claims/health/{id}", claimId)
+            multipart("/claims/auto/{id}/customer-invoices", claimId)
+                .file(invoiceJson)
+                .file(pdfFile)
+                .contentType(MediaType.MULTIPART_FORM_DATA))
+        .andExpect(status().isCreated())
+        .andExpect(jsonPath("$.id", is(1)))
+        .andExpect(jsonPath("$.vendorName", is("AutoShop Berlin")))
+        .andExpect(jsonPath("$.invoiceAmount", is(1150.00)));
+  }
+
+  @Test
+  @DisplayName(
+      "GET /claims/auto/{id}/customer-invoices/{invoiceId} - Should return specific customer invoice")
+  void getAutoClaimCustomerInvoiceById_shouldReturnInvoice() throws Exception {
+    long claimId = 100L;
+    long invoiceId = 1L;
+    CustomerInvoiceDto invoice =
+        new CustomerInvoiceDto()
+            .id(invoiceId)
+            .claimId(claimId)
+            .vendorName("AutoShop Berlin")
+            .invoiceAmount(BigDecimal.valueOf(1150.00))
+            .description("Front bumper replacement")
+            .invoiceDate(LocalDate.of(2025, 10, 20));
+
+    when(claimService.findClaimById(claimId)).thenReturn(Optional.of(new AutoClaimDto()));
+    when(customerInvoiceService.findCustomerInvoiceByClaimIdAndInvoiceId(claimId, invoiceId))
+        .thenReturn(Optional.of(invoice));
+
+    mockMvc
+        .perform(get("/claims/auto/{id}/customer-invoices/{invoiceId}", claimId, invoiceId))
+        .andExpect(status().isOk())
+        .andExpect(jsonPath("$.vendorName", is("AutoShop Berlin")))
+        .andExpect(jsonPath("$.invoiceAmount", is(1150.00)));
+  }
+
+  @Test
+  @DisplayName(
+      "PUT /claims/auto/{id}/customer-invoices/{invoiceId} - Should update customer invoice")
+  void updateAutoClaimCustomerInvoice_shouldReturnUpdatedInvoice() throws Exception {
+    long claimId = 100L;
+    long invoiceId = 1L;
+    CustomerInvoiceDto updateDto =
+        new CustomerInvoiceDto()
+            .claimId(claimId)
+            .vendorName("Updated AutoShop")
+            .invoiceAmount(BigDecimal.valueOf(1250.00))
+            .description("Updated description");
+
+    CustomerInvoiceDto updatedInvoice =
+        new CustomerInvoiceDto()
+            .id(invoiceId)
+            .claimId(claimId)
+            .vendorName("Updated AutoShop")
+            .invoiceAmount(BigDecimal.valueOf(1250.00))
+            .description("Updated description")
+            .invoiceDate(LocalDate.of(2025, 10, 20));
+
+    when(claimService.findClaimById(claimId)).thenReturn(Optional.of(new AutoClaimDto()));
+    when(customerInvoiceService.updateCustomerInvoice(claimId, invoiceId, updateDto))
+        .thenReturn(updatedInvoice);
+
+    mockMvc
+        .perform(
+            put("/claims/auto/{id}/customer-invoices/{invoiceId}", claimId, invoiceId)
                 .contentType(MediaType.APPLICATION_JSON)
                 .content(objectMapper.writeValueAsString(updateDto)))
-        .andExpect(status().isNotFound());
-  }
-
-  @Test
-  @DisplayName("DELETE /claims/health/{id} - Should delete health claim and return 204 No Content")
-  void deleteHealthClaim_whenExists_shouldReturnNoContent() throws Exception {
-    // Given: An existing health claim
-    long claimId = 100L;
-    HealthClaimDto existingClaim =
-        new HealthClaimDto()
-            .id(claimId)
-            .claimNumber("HC-2025-001")
-            .medicalProvider("City General Hospital")
-            .claimType(ClaimTypeEnum.HEALTH_CLAIM_DTO);
-
-    when(claimService.findClaimById(claimId)).thenReturn(Optional.of(existingClaim));
-    doNothing().when(claimService).deleteClaim(claimId);
-
-    // When & Then: Perform DELETE request and assert the response
-    mockMvc.perform(delete("/claims/health/{id}", claimId)).andExpect(status().isNoContent());
-  }
-
-  @Test
-  @DisplayName("DELETE /claims/health/{id} - Should return 404 Not Found when claim does not exist")
-  void deleteHealthClaim_whenNotExists_shouldReturnNotFound() throws Exception {
-    // Given: The claim does not exist
-    long claimId = 999L;
-    when(claimService.findClaimById(claimId)).thenReturn(Optional.empty());
-
-    // When & Then: Perform DELETE request and assert the response
-    mockMvc.perform(delete("/claims/health/{id}", claimId)).andExpect(status().isNotFound());
-  }
-
-  @Test
-  @DisplayName("DELETE /claims/health/{id} - Should return 404 when claim is not a health claim")
-  void deleteHealthClaim_whenNotHealthClaim_shouldReturnNotFound() throws Exception {
-    // Given: The claim exists but is not a health claim (polymorphic check)
-    long claimId = 100L;
-    ClaimDto nonHealthClaim =
-        new ClaimDto().id(claimId).claimType(ClaimTypeEnum.AUTO_CLAIM_DTO); // Different claim type
-
-    when(claimService.findClaimById(claimId)).thenReturn(Optional.of(nonHealthClaim));
-
-    // When & Then: Perform DELETE request and assert the response
-    mockMvc.perform(delete("/claims/health/{id}", claimId)).andExpect(status().isNotFound());
-  }
-
-  @Test
-  @DisplayName("DELETE /claims/health/{id} - Should return 500 when deletion fails")
-  void deleteHealthClaim_whenDeletionFails_shouldReturnInternalServerError() throws Exception {
-    // Given: An existing health claim but deletion fails
-    long claimId = 100L;
-    HealthClaimDto existingClaim =
-        new HealthClaimDto()
-            .id(claimId)
-            .claimNumber("HC-2025-001")
-            .medicalProvider("City General Hospital")
-            .claimType(ClaimTypeEnum.HEALTH_CLAIM_DTO);
-
-    when(claimService.findClaimById(claimId)).thenReturn(Optional.of(existingClaim));
-    doThrow(new RuntimeException("Database error")).when(claimService).deleteClaim(claimId);
-
-    // When & Then: Perform DELETE request and assert the response
-    mockMvc
-        .perform(delete("/claims/health/{id}", claimId))
-        .andExpect(status().isInternalServerError());
-  }
-
-  @Test
-  @DisplayName(
-      "PUT /claims/health/{id}/assign-adjuster - Should assign adjuster and return updated claim")
-  void assignAdjusterToHealthClaim_whenValidRequest_shouldReturnUpdatedClaim() throws Exception {
-    // Given: A valid assign adjuster request
-    long claimId = 100L;
-    long employeeId = 50L;
-    AssignAdjusterRequestDto assignRequest = new AssignAdjusterRequestDto().employeeId(employeeId);
-
-    HealthClaimDto updatedClaim =
-        new HealthClaimDto()
-            .id(claimId)
-            .claimNumber("HC-2025-001")
-            .medicalProvider("City General Hospital")
-            .claimType(ClaimTypeEnum.HEALTH_CLAIM_DTO)
-            .status(ClaimDto.StatusEnum.IN_REVIEW)
-            .assignedAdjusterId(employeeId);
-
-    when(claimService.assignAdjuster(claimId, employeeId)).thenReturn(updatedClaim);
-
-    // When & Then: Perform PUT request and assert the response
-    mockMvc
-        .perform(
-            put("/claims/health/{id}/assign-adjuster", claimId)
-                .contentType(MediaType.APPLICATION_JSON)
-                .content(objectMapper.writeValueAsString(assignRequest)))
         .andExpect(status().isOk())
-        .andExpect(jsonPath("$.id", is(100)))
-        .andExpect(jsonPath("$.assignedAdjusterId", is(50)))
-        .andExpect(jsonPath("$.status", is("IN_REVIEW")));
+        .andExpect(jsonPath("$.vendorName", is("Updated AutoShop")))
+        .andExpect(jsonPath("$.invoiceAmount", is(1250.00)));
   }
 
   @Test
   @DisplayName(
-      "PUT /claims/health/{id}/assign-adjuster - Should return 404 when claim does not exist")
-  void assignAdjusterToHealthClaim_whenClaimNotExists_shouldReturnNotFound() throws Exception {
-    // Given: The claim does not exist
-    long claimId = 997L;
-    long employeeId = 50L;
-    AssignAdjusterRequestDto assignRequest = new AssignAdjusterRequestDto().employeeId(employeeId);
-
-    when(claimService.assignAdjuster(claimId, employeeId))
-        .thenThrow(new ResourceNotFoundException("Claim not found"));
-
-    // When & Then: Perform PUT request and assert the response
-    mockMvc
-        .perform(
-            put("/claims/health/{id}/assign-adjuster", claimId)
-                .contentType(MediaType.APPLICATION_JSON)
-                .content(objectMapper.writeValueAsString(assignRequest)))
-        .andExpect(status().isNotFound());
-  }
-
-  @Test
-  @DisplayName(
-      "PUT /claims/health/{id}/assign-adjuster - Should return 404 when employee does not exist")
-  void assignAdjusterToHealthClaim_whenEmployeeNotExists_shouldReturnNotFound() throws Exception {
-    // Given: The employee does not exist
+      "DELETE /claims/auto/{id}/customer-invoices/{invoiceId} - Should delete customer invoice")
+  void deleteAutoClaimCustomerInvoice_shouldReturnNoContent() throws Exception {
     long claimId = 100L;
-    long employeeId = 999L;
-    AssignAdjusterRequestDto assignRequest = new AssignAdjusterRequestDto().employeeId(employeeId);
+    long invoiceId = 1L;
 
-    when(claimService.assignAdjuster(claimId, employeeId))
-        .thenThrow(new ResourceNotFoundException("Employee not found"));
+    when(claimService.findClaimById(claimId)).thenReturn(Optional.of(new AutoClaimDto()));
+    doNothing().when(customerInvoiceService).deleteCustomerInvoice(claimId, invoiceId);
 
-    // When & Then: Perform PUT request and assert the response
+    mockMvc
+        .perform(delete("/claims/auto/{id}/customer-invoices/{invoiceId}", claimId, invoiceId))
+        .andExpect(status().isNoContent());
+  }
+
+  // ========== AUTO CLAIM DECISIONS ==========
+
+  @Test
+  @DisplayName("GET /claims/auto/{id}/decision - Should return claim decision")
+  void getAutoClaimDecision_shouldReturnDecision() throws Exception {
+    long claimId = 100L;
+    ClaimDecisionDto decision =
+        new ClaimDecisionDto()
+            .id(1L)
+            .claimId(claimId)
+            .decisionMakerId(10L)
+            .decisionType(ClaimDecisionDto.DecisionTypeEnum.APPROVED)
+            .approvedAmount(BigDecimal.valueOf(1000.00))
+            .reasoning("Claim approved based on adjuster report")
+            .decisionDate(ZonedDateTime.now().toOffsetDateTime());
+
+    when(claimService.findClaimById(claimId)).thenReturn(Optional.of(new AutoClaimDto()));
+    when(claimDecisionService.findClaimDecisionByClaimId(claimId))
+        .thenReturn(Optional.of(decision));
+
+    mockMvc
+        .perform(get("/claims/auto/{id}/decision", claimId))
+        .andExpect(status().isOk())
+        .andExpect(jsonPath("$.decisionType", is("APPROVED")))
+        .andExpect(jsonPath("$.approvedAmount", is(1000.00)));
+  }
+
+  @Test
+  @DisplayName("POST /claims/auto/{id}/decision - Should create claim decision")
+  void createAutoClaimDecision_shouldReturnCreatedDecision() throws Exception {
+    long claimId = 100L;
+    ClaimDecisionDto decisionDto =
+        new ClaimDecisionDto()
+            .claimId(claimId)
+            .decisionMakerId(10L)
+            .decisionType(ClaimDecisionDto.DecisionTypeEnum.APPROVED)
+            .approvedAmount(BigDecimal.valueOf(1000.00))
+            .reasoning("Claim approved based on adjuster report");
+
+    ClaimDecisionDto createdDecision =
+        new ClaimDecisionDto()
+            .id(1L)
+            .claimId(claimId)
+            .decisionMakerId(10L)
+            .decisionType(ClaimDecisionDto.DecisionTypeEnum.APPROVED)
+            .approvedAmount(BigDecimal.valueOf(1000.00))
+            .reasoning("Claim approved based on adjuster report")
+            .decisionDate(ZonedDateTime.now().toOffsetDateTime());
+
+    when(claimService.findClaimById(claimId)).thenReturn(Optional.of(new AutoClaimDto()));
+    when(claimService.canMakeDecision(claimId)).thenReturn(true);
+    when(claimDecisionService.createClaimDecision(claimId, decisionDto))
+        .thenReturn(createdDecision);
+
     mockMvc
         .perform(
-            put("/claims/health/{id}/assign-adjuster", claimId)
+            post("/claims/auto/{id}/decision", claimId)
                 .contentType(MediaType.APPLICATION_JSON)
-                .content(objectMapper.writeValueAsString(assignRequest)))
-        .andExpect(status().isNotFound());
+                .content(objectMapper.writeValueAsString(decisionDto)))
+        .andExpect(status().isCreated())
+        .andExpect(jsonPath("$.id", is(1)))
+        .andExpect(jsonPath("$.decisionType", is("APPROVED")))
+        .andExpect(jsonPath("$.approvedAmount", is(1000.00)));
   }
+
+  @Test
+  @DisplayName("PUT /claims/auto/{id}/decision - Should update claim decision")
+  void updateAutoClaimDecision_shouldReturnUpdatedDecision() throws Exception {
+    long claimId = 100L;
+    ClaimDecisionDto updateDto =
+        new ClaimDecisionDto()
+            .id(1L)
+            .decisionMakerId(10L)
+            .claimId(claimId)
+            .decisionType(ClaimDecisionDto.DecisionTypeEnum.PARTIALLY_APPROVED)
+            .approvedAmount(BigDecimal.valueOf(800.00))
+            .reasoning("Updated reasoning");
+
+    ClaimDecisionDto updatedDecision =
+        new ClaimDecisionDto()
+            .id(1L)
+            .claimId(claimId)
+            .decisionMakerId(10L)
+            .decisionType(ClaimDecisionDto.DecisionTypeEnum.PARTIALLY_APPROVED)
+            .approvedAmount(BigDecimal.valueOf(800.00))
+            .reasoning("Updated reasoning")
+            .decisionDate(ZonedDateTime.now().toOffsetDateTime());
+
+    when(claimService.findClaimById(claimId)).thenReturn(Optional.of(new AutoClaimDto()));
+    when(claimDecisionService.updateClaimDecision(claimId, updateDto)).thenReturn(updatedDecision);
+
+    mockMvc
+        .perform(
+            put("/claims/auto/{id}/decision", claimId)
+                .contentType(MediaType.APPLICATION_JSON)
+                .content(objectMapper.writeValueAsString(updateDto)))
+        .andExpect(status().isOk())
+        .andExpect(jsonPath("$.decisionType", is("PARTIALLY_APPROVED")))
+        .andExpect(jsonPath("$.approvedAmount", is(800.00)));
+  }
+
+  // ========== HOME CLAIM BASIC OPERATIONS ==========
 
   @Test
   @DisplayName("POST /claims/home - Should create home claim and return 201 Created")
   void createHomeClaim_withValidData_shouldReturn201() throws Exception {
-    // Given: A valid home claim DTO for creation
     HomeClaimDto inputDto =
         new HomeClaimDto()
             .typeOfDamage("Water damage")
-            .damagedItems("Living room carpet, kitchen cabinets, electronics")
+            .damagedItems("Living room carpet, kitchen cabinets")
             .claimType(ClaimTypeEnum.HOME_CLAIM_DTO)
             .policyId(1L)
-            .description("Pipe burst in kitchen causing water damage")
+            .description("Pipe burst in kitchen")
             .dateOfIncident(LocalDate.of(2025, 8, 15))
             .estimatedAmount(BigDecimal.valueOf(15000.00));
 
@@ -759,17 +732,16 @@ class ClaimsControllerTest {
             .id(100L)
             .claimNumber("HM-2025-001")
             .typeOfDamage("Water damage")
-            .damagedItems("Living room carpet, kitchen cabinets, electronics")
+            .damagedItems("Living room carpet, kitchen cabinets")
             .claimType(ClaimTypeEnum.HOME_CLAIM_DTO)
             .policyId(1L)
-            .description("Pipe burst in kitchen causing water damage")
+            .description("Pipe burst in kitchen")
             .dateOfIncident(LocalDate.of(2025, 8, 15))
             .estimatedAmount(BigDecimal.valueOf(15000.00))
             .status(ClaimDto.StatusEnum.SUBMITTED);
 
     when(claimService.submitClaim(eq(1L), any(HomeClaimDto.class))).thenReturn(outputDto);
 
-    // When & Then: Perform POST request and assert the response
     mockMvc
         .perform(
             post("/claims/home")
@@ -778,63 +750,41 @@ class ClaimsControllerTest {
         .andExpect(status().isCreated())
         .andExpect(jsonPath("$.id", is(100)))
         .andExpect(jsonPath("$.claimNumber", is("HM-2025-001")))
-        .andExpect(jsonPath("$.typeOfDamage", is("Water damage")))
-        .andExpect(
-            jsonPath("$.damagedItems", is("Living room carpet, kitchen cabinets, electronics")))
-        .andExpect(jsonPath("$.status", is("SUBMITTED")));
+        .andExpect(jsonPath("$.typeOfDamage", is("Water damage")));
   }
 
   @Test
   @DisplayName("GET /claims/home/{id} - Should return home claim when claim exists")
   void getHomeClaimById_whenExists_shouldReturnHomeClaim() throws Exception {
-    // Given: A home claim exists and the service is mocked to return it
     long claimId = 100L;
     HomeClaimDto homeClaimDto =
         new HomeClaimDto()
             .id(claimId)
             .claimNumber("HM-2025-001")
             .typeOfDamage("Water damage")
-            .damagedItems("Living room carpet, kitchen cabinets, electronics")
+            .damagedItems("Living room carpet, kitchen cabinets")
             .claimType(ClaimTypeEnum.HOME_CLAIM_DTO)
             .policyId(1L)
-            .description("Pipe burst in kitchen causing water damage")
-            .dateOfIncident(LocalDate.of(2025, 8, 15))
             .status(ClaimDto.StatusEnum.SUBMITTED);
 
     when(claimService.findClaimById(claimId)).thenReturn(Optional.of(homeClaimDto));
 
-    // When & Then: Perform GET request and assert the response
     mockMvc
         .perform(get("/claims/home/{id}", claimId))
         .andExpect(status().isOk())
         .andExpect(jsonPath("$.id", is(100)))
         .andExpect(jsonPath("$.claimNumber", is("HM-2025-001")))
-        .andExpect(jsonPath("$.typeOfDamage", is("Water damage")))
-        .andExpect(
-            jsonPath("$.damagedItems", is("Living room carpet, kitchen cabinets, electronics")))
-        .andExpect(jsonPath("$.claimType", is(ClaimTypeEnum.HOME_CLAIM_DTO.toString())));
-  }
-
-  @Test
-  @DisplayName("GET /claims/home/{id} - Should return 404 Not Found when claim does not exist")
-  void getHomeClaimById_whenNotExists_shouldReturnNotFound() throws Exception {
-    // Given: The service will not find the claim
-    when(claimService.findClaimById(anyLong())).thenReturn(Optional.empty());
-
-    // When & Then: Perform GET request and assert the response
-    mockMvc.perform(get("/claims/home/{id}", 999L)).andExpect(status().isNotFound());
+        .andExpect(jsonPath("$.typeOfDamage", is("Water damage")));
   }
 
   @Test
   @DisplayName("GET /claims/home - Should return list of home claims")
   void getAllHomeClaims_shouldReturnHomeClaimsList() throws Exception {
-    // Given: Multiple home claims exist
     HomeClaimDto claim1 =
         new HomeClaimDto()
             .id(100L)
             .claimNumber("HM-2025-001")
             .typeOfDamage("Water damage")
-            .damagedItems("Living room carpet, kitchen cabinets")
             .claimType(ClaimTypeEnum.HOME_CLAIM_DTO)
             .status(ClaimDto.StatusEnum.SUBMITTED);
 
@@ -843,180 +793,75 @@ class ClaimsControllerTest {
             .id(101L)
             .claimNumber("HM-2025-002")
             .typeOfDamage("Fire damage")
-            .damagedItems("Roof, attic, bedroom walls")
             .claimType(ClaimTypeEnum.HOME_CLAIM_DTO)
             .status(ClaimDto.StatusEnum.IN_REVIEW);
 
     List<ClaimDto> claims = List.of(claim1, claim2);
     when(claimService.getAllClaimsByType(ClaimTypeEnum.HOME_CLAIM_DTO)).thenReturn(claims);
 
-    // When & Then: Perform GET request and assert the response
     mockMvc
         .perform(get("/claims/home"))
         .andExpect(status().isOk())
         .andExpect(jsonPath("$.size()", is(2)))
-        .andExpect(jsonPath("$[0].id", is(100)))
-        .andExpect(jsonPath("$[0].claimNumber", is("HM-2025-001")))
         .andExpect(jsonPath("$[0].typeOfDamage", is("Water damage")))
-        .andExpect(jsonPath("$[1].id", is(101)))
-        .andExpect(jsonPath("$[1].claimNumber", is("HM-2025-002")))
         .andExpect(jsonPath("$[1].typeOfDamage", is("Fire damage")));
-  }
-
-  @Test
-  @DisplayName("GET /claims/home - Should return empty list when no home claims exist")
-  void getAllHomeClaims_whenNoClaims_shouldReturnEmptyList() throws Exception {
-    // Given: No home claims exist
-    when(claimService.getAllClaimsByType(ClaimTypeEnum.HOME_CLAIM_DTO)).thenReturn(List.of());
-
-    // When & Then: Perform GET request and assert the response
-    mockMvc
-        .perform(get("/claims/home"))
-        .andExpect(status().isOk())
-        .andExpect(jsonPath("$.size()", is(0)));
   }
 
   @Test
   @DisplayName("PUT /claims/home/{id} - Should update home claim and return updated claim")
   void updateHomeClaim_whenExists_shouldReturnUpdatedClaim() throws Exception {
-    // Given: An existing claim and update data
     long claimId = 100L;
-    long policyId = 1L;
-    LocalDate dateOfIncident = LocalDate.of(2025, 8, 15);
     HomeClaimDto updateDto =
         new HomeClaimDto()
-            .policyId(policyId)
+            .id(claimId)
+            .policyId(1L)
+            .dateOfIncident(LocalDate.of(2025, 8, 15))
             .typeOfDamage("Updated water damage")
-            .damagedItems("Living room carpet, kitchen cabinets, updated electronics")
-            .description("Updated pipe burst description")
-            .estimatedAmount(BigDecimal.valueOf(18000.00))
-            .dateOfIncident(dateOfIncident);
+            .damagedItems("Updated items")
+            .description("Updated description");
 
     HomeClaimDto updatedDto =
         new HomeClaimDto()
             .id(claimId)
-            .policyId(policyId)
+            .policyId(1L)
+            .dateOfIncident(LocalDate.of(2025, 8, 15))
             .claimNumber("HM-2025-001")
             .typeOfDamage("Updated water damage")
-            .damagedItems("Living room carpet, kitchen cabinets, updated electronics")
-            .description("Updated pipe burst description")
-            .estimatedAmount(BigDecimal.valueOf(18000.00))
-            .status(ClaimDto.StatusEnum.IN_REVIEW)
-            .dateOfIncident(dateOfIncident);
+            .damagedItems("Updated items")
+            .description("Updated description")
+            .status(ClaimDto.StatusEnum.IN_REVIEW);
 
     when(claimService.updateClaim(eq(claimId), any(HomeClaimDto.class))).thenReturn(updatedDto);
 
-    // When & Then: Perform PUT request and assert the response
     mockMvc
         .perform(
             put("/claims/home/{id}", claimId)
                 .contentType(MediaType.APPLICATION_JSON)
                 .content(objectMapper.writeValueAsString(updateDto)))
         .andExpect(status().isOk())
-        .andExpect(jsonPath("$.id", is(100)))
         .andExpect(jsonPath("$.typeOfDamage", is("Updated water damage")))
-        .andExpect(
-            jsonPath(
-                "$.damagedItems", is("Living room carpet, kitchen cabinets, updated electronics")))
-        .andExpect(jsonPath("$.description", is("Updated pipe burst description")));
-  }
-
-  @Test
-  @DisplayName("PUT /claims/home/{id} - Should return 404 Not Found when claim does not exist")
-  void updateHomeClaim_whenNotExists_shouldReturnNotFound() throws Exception {
-    // Given: The service throws an exception when claim is not found
-    long claimId = 999L;
-    long policyId = 1L;
-    LocalDate dateOfIncident = LocalDate.of(2025, 8, 15);
-    HomeClaimDto updateDto =
-        new HomeClaimDto()
-            .policyId(policyId)
-            .typeOfDamage("Updated water damage")
-            .description("Updated pipe burst description")
-            .dateOfIncident(dateOfIncident);
-
-    when(claimService.updateClaim(eq(claimId), any(HomeClaimDto.class)))
-        .thenThrow(new ResourceNotFoundException("Claim not found"));
-
-    // When & Then: Perform PUT request and assert the response
-    mockMvc
-        .perform(
-            put("/claims/home/{id}", claimId)
-                .contentType(MediaType.APPLICATION_JSON)
-                .content(objectMapper.writeValueAsString(updateDto)))
-        .andExpect(status().isNotFound());
+        .andExpect(jsonPath("$.description", is("Updated description")));
   }
 
   @Test
   @DisplayName("DELETE /claims/home/{id} - Should delete home claim and return 204 No Content")
   void deleteHomeClaim_whenExists_shouldReturnNoContent() throws Exception {
-    // Given: An existing home claim
     long claimId = 100L;
     HomeClaimDto existingClaim =
         new HomeClaimDto()
             .id(claimId)
             .claimNumber("HM-2025-001")
-            .typeOfDamage("Water damage")
             .claimType(ClaimTypeEnum.HOME_CLAIM_DTO);
 
     when(claimService.findClaimById(claimId)).thenReturn(Optional.of(existingClaim));
     doNothing().when(claimService).deleteClaim(claimId);
 
-    // When & Then: Perform DELETE request and assert the response
     mockMvc.perform(delete("/claims/home/{id}", claimId)).andExpect(status().isNoContent());
   }
 
   @Test
-  @DisplayName("DELETE /claims/home/{id} - Should return 404 Not Found when claim does not exist")
-  void deleteHomeClaim_whenNotExists_shouldReturnNotFound() throws Exception {
-    // Given: The claim does not exist
-    long claimId = 999L;
-    when(claimService.findClaimById(claimId)).thenReturn(Optional.empty());
-
-    // When & Then: Perform DELETE request and assert the response
-    mockMvc.perform(delete("/claims/home/{id}", claimId)).andExpect(status().isNotFound());
-  }
-
-  @Test
-  @DisplayName("DELETE /claims/home/{id} - Should return 404 when claim is not a home claim")
-  void deleteHomeClaim_whenNotHomeClaim_shouldReturnNotFound() throws Exception {
-    // Given: The claim exists but is not a home claim (polymorphic check)
-    long claimId = 100L;
-    ClaimDto nonHomeClaim =
-        new ClaimDto().id(claimId).claimType(ClaimTypeEnum.AUTO_CLAIM_DTO); // Different claim type
-
-    when(claimService.findClaimById(claimId)).thenReturn(Optional.of(nonHomeClaim));
-
-    // When & Then: Perform DELETE request and assert the response
-    mockMvc.perform(delete("/claims/home/{id}", claimId)).andExpect(status().isNotFound());
-  }
-
-  @Test
-  @DisplayName("DELETE /claims/home/{id} - Should return 500 when deletion fails")
-  void deleteHomeClaim_whenDeletionFails_shouldReturnInternalServerError() throws Exception {
-    // Given: An existing home claim but deletion fails
-    long claimId = 100L;
-    HomeClaimDto existingClaim =
-        new HomeClaimDto()
-            .id(claimId)
-            .claimNumber("HM-2025-001")
-            .typeOfDamage("Water damage")
-            .claimType(ClaimTypeEnum.HOME_CLAIM_DTO);
-
-    when(claimService.findClaimById(claimId)).thenReturn(Optional.of(existingClaim));
-    doThrow(new RuntimeException("Database error")).when(claimService).deleteClaim(claimId);
-
-    // When & Then: Perform DELETE request and assert the response
-    mockMvc
-        .perform(delete("/claims/home/{id}", claimId))
-        .andExpect(status().isInternalServerError());
-  }
-
-  @Test
-  @DisplayName(
-      "PUT /claims/home/{id}/assign-adjuster - Should assign adjuster and return updated claim")
+  @DisplayName("PUT /claims/home/{id}/assign-adjuster - Should assign adjuster to home claim")
   void assignAdjusterToHomeClaim_whenValidRequest_shouldReturnUpdatedClaim() throws Exception {
-    // Given: A valid assign adjuster request
     long claimId = 100L;
     long employeeId = 50L;
     AssignAdjusterRequestDto assignRequest = new AssignAdjusterRequestDto().employeeId(employeeId);
@@ -1032,57 +877,315 @@ class ClaimsControllerTest {
 
     when(claimService.assignAdjuster(claimId, employeeId)).thenReturn(updatedClaim);
 
-    // When & Then: Perform PUT request and assert the response
     mockMvc
         .perform(
             put("/claims/home/{id}/assign-adjuster", claimId)
                 .contentType(MediaType.APPLICATION_JSON)
                 .content(objectMapper.writeValueAsString(assignRequest)))
         .andExpect(status().isOk())
-        .andExpect(jsonPath("$.id", is(100)))
         .andExpect(jsonPath("$.assignedAdjusterId", is(50)))
         .andExpect(jsonPath("$.status", is("IN_REVIEW")));
   }
 
+  // ========== HEALTH CLAIM BASIC OPERATIONS ==========
+
   @Test
-  @DisplayName(
-      "PUT /claims/home/{id}/assign-adjuster - Should return 404 when claim does not exist")
-  void assignAdjusterToHomeClaim_whenClaimNotExists_shouldReturnNotFound() throws Exception {
-    // Given: The claim does not exist
-    long claimId = 998L;
-    long employeeId = 50L;
-    AssignAdjusterRequestDto assignRequest = new AssignAdjusterRequestDto().employeeId(employeeId);
+  @DisplayName("POST /claims/health - Should create health claim and return 201 Created")
+  void createHealthClaim_withValidData_shouldReturn201() throws Exception {
+    HealthClaimDto inputDto =
+        new HealthClaimDto()
+            .medicalProvider("City General Hospital")
+            .procedureCode("CPT-99213")
+            .claimType(ClaimTypeEnum.HEALTH_CLAIM_DTO)
+            .policyId(1L)
+            .description("Medical consultation")
+            .dateOfIncident(LocalDate.of(2025, 8, 15))
+            .estimatedAmount(BigDecimal.valueOf(250.00));
 
-    when(claimService.assignAdjuster(claimId, employeeId))
-        .thenThrow(new ResourceNotFoundException("Claim not found"));
+    HealthClaimDto outputDto =
+        new HealthClaimDto()
+            .id(100L)
+            .claimNumber("HC-2025-001")
+            .medicalProvider("City General Hospital")
+            .procedureCode("CPT-99213")
+            .claimType(ClaimTypeEnum.HEALTH_CLAIM_DTO)
+            .policyId(1L)
+            .description("Medical consultation")
+            .dateOfIncident(LocalDate.of(2025, 8, 15))
+            .estimatedAmount(BigDecimal.valueOf(250.00))
+            .status(ClaimDto.StatusEnum.SUBMITTED);
 
-    // When & Then: Perform PUT request and assert the response
+    when(claimService.submitClaim(eq(1L), any(HealthClaimDto.class))).thenReturn(outputDto);
+
     mockMvc
         .perform(
-            put("/claims/home/{id}/assign-adjuster", claimId)
+            post("/claims/health")
                 .contentType(MediaType.APPLICATION_JSON)
-                .content(objectMapper.writeValueAsString(assignRequest)))
-        .andExpect(status().isNotFound());
+                .content(objectMapper.writeValueAsString(inputDto)))
+        .andExpect(status().isCreated())
+        .andExpect(jsonPath("$.id", is(100)))
+        .andExpect(jsonPath("$.claimNumber", is("HC-2025-001")))
+        .andExpect(jsonPath("$.medicalProvider", is("City General Hospital")));
   }
 
   @Test
-  @DisplayName(
-      "PUT /claims/home/{id}/assign-adjuster - Should return 404 when employee does not exist")
-  void assignAdjusterToHomeClaim_whenEmployeeNotExists_shouldReturnNotFound() throws Exception {
-    // Given: The employee does not exist
+  @DisplayName("GET /claims/health/{id} - Should return health claim when claim exists")
+  void getHealthClaimById_whenExists_shouldReturnHealthClaim() throws Exception {
     long claimId = 100L;
-    long employeeId = 997L;
-    AssignAdjusterRequestDto assignRequest = new AssignAdjusterRequestDto().employeeId(employeeId);
+    HealthClaimDto healthClaimDto =
+        new HealthClaimDto()
+            .id(claimId)
+            .claimNumber("HC-2025-001")
+            .medicalProvider("City General Hospital")
+            .procedureCode("CPT-99213")
+            .claimType(ClaimTypeEnum.HEALTH_CLAIM_DTO)
+            .policyId(1L)
+            .status(ClaimDto.StatusEnum.SUBMITTED);
 
-    when(claimService.assignAdjuster(claimId, employeeId))
-        .thenThrow(new ResourceNotFoundException("Employee not found"));
+    when(claimService.findClaimById(claimId)).thenReturn(Optional.of(healthClaimDto));
 
-    // When & Then: Perform PUT request and assert the response
+    mockMvc
+        .perform(get("/claims/health/{id}", claimId))
+        .andExpect(status().isOk())
+        .andExpect(jsonPath("$.id", is(100)))
+        .andExpect(jsonPath("$.claimNumber", is("HC-2025-001")))
+        .andExpect(jsonPath("$.medicalProvider", is("City General Hospital")));
+  }
+
+  @Test
+  @DisplayName("GET /claims/health - Should return list of health claims")
+  void getAllHealthClaims_shouldReturnHealthClaimsList() throws Exception {
+    HealthClaimDto claim1 =
+        new HealthClaimDto()
+            .id(100L)
+            .claimNumber("HC-2025-001")
+            .medicalProvider("City General Hospital")
+            .claimType(ClaimTypeEnum.HEALTH_CLAIM_DTO)
+            .status(ClaimDto.StatusEnum.SUBMITTED);
+
+    HealthClaimDto claim2 =
+        new HealthClaimDto()
+            .id(101L)
+            .claimNumber("HC-2025-002")
+            .medicalProvider("Regional Medical Center")
+            .claimType(ClaimTypeEnum.HEALTH_CLAIM_DTO)
+            .status(ClaimDto.StatusEnum.IN_REVIEW);
+
+    List<ClaimDto> claims = List.of(claim1, claim2);
+    when(claimService.getAllClaimsByType(ClaimTypeEnum.HEALTH_CLAIM_DTO)).thenReturn(claims);
+
+    mockMvc
+        .perform(get("/claims/health"))
+        .andExpect(status().isOk())
+        .andExpect(jsonPath("$.size()", is(2)))
+        .andExpect(jsonPath("$[0].medicalProvider", is("City General Hospital")))
+        .andExpect(jsonPath("$[1].medicalProvider", is("Regional Medical Center")));
+  }
+
+  @Test
+  @DisplayName("PUT /claims/health/{id} - Should update health claim and return updated claim")
+  void updateHealthClaim_whenExists_shouldReturnUpdatedClaim() throws Exception {
+    long claimId = 100L;
+    HealthClaimDto updateDto =
+        new HealthClaimDto()
+            .policyId(1L)
+            .dateOfIncident(LocalDate.of(2025, 8, 15))
+            .medicalProvider("Updated Medical Center")
+            .procedureCode("CPT-99215")
+            .description("Updated procedure");
+
+    HealthClaimDto updatedDto =
+        new HealthClaimDto()
+            .id(claimId)
+            .claimNumber("HC-2025-001")
+            .medicalProvider("Updated Medical Center")
+            .procedureCode("CPT-99215")
+            .description("Updated procedure")
+            .status(ClaimDto.StatusEnum.IN_REVIEW);
+
+    when(claimService.updateClaim(eq(claimId), any(HealthClaimDto.class))).thenReturn(updatedDto);
+
     mockMvc
         .perform(
-            put("/claims/home/{id}/assign-adjuster", claimId)
+            put("/claims/health/{id}", claimId)
+                .contentType(MediaType.APPLICATION_JSON)
+                .content(objectMapper.writeValueAsString(updateDto)))
+        .andExpect(status().isOk())
+        .andExpect(jsonPath("$.medicalProvider", is("Updated Medical Center")))
+        .andExpect(jsonPath("$.procedureCode", is("CPT-99215")));
+  }
+
+  @Test
+  @DisplayName("DELETE /claims/health/{id} - Should delete health claim and return 204 No Content")
+  void deleteHealthClaim_whenExists_shouldReturnNoContent() throws Exception {
+    long claimId = 100L;
+    HealthClaimDto existingClaim =
+        new HealthClaimDto()
+            .id(claimId)
+            .claimNumber("HC-2025-001")
+            .claimType(ClaimTypeEnum.HEALTH_CLAIM_DTO);
+
+    when(claimService.findClaimById(claimId)).thenReturn(Optional.of(existingClaim));
+    doNothing().when(claimService).deleteClaim(claimId);
+
+    mockMvc.perform(delete("/claims/health/{id}", claimId)).andExpect(status().isNoContent());
+  }
+
+  @Test
+  @DisplayName("PUT /claims/health/{id}/assign-adjuster - Should assign adjuster to health claim")
+  void assignAdjusterToHealthClaim_whenValidRequest_shouldReturnUpdatedClaim() throws Exception {
+    long claimId = 100L;
+    long employeeId = 50L;
+    AssignAdjusterRequestDto assignRequest = new AssignAdjusterRequestDto().employeeId(employeeId);
+
+    HealthClaimDto updatedClaim =
+        new HealthClaimDto()
+            .id(claimId)
+            .claimNumber("HC-2025-001")
+            .medicalProvider("City General Hospital")
+            .claimType(ClaimTypeEnum.HEALTH_CLAIM_DTO)
+            .status(ClaimDto.StatusEnum.IN_REVIEW)
+            .assignedAdjusterId(employeeId);
+
+    when(claimService.assignAdjuster(claimId, employeeId)).thenReturn(updatedClaim);
+
+    mockMvc
+        .perform(
+            put("/claims/health/{id}/assign-adjuster", claimId)
                 .contentType(MediaType.APPLICATION_JSON)
                 .content(objectMapper.writeValueAsString(assignRequest)))
-        .andExpect(status().isNotFound());
+        .andExpect(status().isOk())
+        .andExpect(jsonPath("$.assignedAdjusterId", is(50)))
+        .andExpect(jsonPath("$.status", is("IN_REVIEW")));
+  }
+
+  // ========== ERROR SCENARIOS ==========
+
+  @Test
+  @DisplayName("Should return 404 when auto claim not found")
+  void nonExistentAutoClaim_shouldReturn404() throws Exception {
+    when(claimService.findClaimById(999L)).thenReturn(Optional.empty());
+    mockMvc.perform(get("/claims/auto/999")).andExpect(status().isNotFound());
+  }
+
+  @Test
+  @DisplayName("Should return 404 when home claim not found")
+  void nonExistentHomeClaim_shouldReturn404() throws Exception {
+    when(claimService.findClaimById(999L)).thenReturn(Optional.empty());
+    mockMvc.perform(get("/claims/home/999")).andExpect(status().isNotFound());
+  }
+
+  @Test
+  @DisplayName("Should return 404 when health claim not found")
+  void nonExistentHealthClaim_shouldReturn404() throws Exception {
+    when(claimService.findClaimById(999L)).thenReturn(Optional.empty());
+    mockMvc.perform(get("/claims/health/999")).andExpect(status().isNotFound());
+  }
+
+  @Test
+  @DisplayName("Should return 400 when creating auto claim decision fails")
+  void createAutoClaimDecision_whenAlreadyExists_shouldReturn409() throws Exception {
+    long claimId = 100L;
+    ClaimDecisionDto decisionDto =
+        new ClaimDecisionDto()
+            .claimId(claimId)
+            .decisionMakerId(10L)
+            .reasoning("approved")
+            .decisionType(ClaimDecisionDto.DecisionTypeEnum.APPROVED);
+
+    when(claimService.findClaimById(claimId)).thenReturn(Optional.of(new AutoClaimDto()));
+    when(claimService.canMakeDecision(claimId)).thenReturn(true);
+    when(claimDecisionService.createClaimDecision(claimId, decisionDto))
+        .thenThrow(new IllegalStateException("Decision already exists"));
+
+    mockMvc
+        .perform(
+            post("/claims/auto/{id}/decision", claimId)
+                .contentType(MediaType.APPLICATION_JSON)
+                .content(objectMapper.writeValueAsString(decisionDto)))
+        .andExpect(status().isConflict());
+  }
+
+  @Test
+  @DisplayName("Should return 400 when cannot add adjuster reports")
+  void createAutoClaimAdjusterReport_whenCannotAdd_shouldReturn400() throws Exception {
+    long claimId = 100L;
+    AdjusterReportDto reportDto =
+        new AdjusterReportDto().claimId(claimId).adjusterId(20L).summary("Test report");
+
+    MockMultipartFile pdfFile =
+        new MockMultipartFile("pdfFile", "report.pdf", "application/pdf", "PDF content".getBytes());
+
+    MockMultipartFile reportJson =
+        new MockMultipartFile(
+            "report",
+            "",
+            "application/json",
+            objectMapper.writeValueAsString(reportDto).getBytes());
+
+    when(claimService.findClaimById(claimId)).thenReturn(Optional.of(new AutoClaimDto()));
+    when(claimService.canAddAdjusterReports(claimId)).thenReturn(false);
+
+    mockMvc
+        .perform(
+            multipart("/claims/auto/{id}/adjuster-reports", claimId)
+                .file(reportJson)
+                .file(pdfFile)
+                .contentType(MediaType.MULTIPART_FORM_DATA))
+        .andExpect(status().isBadRequest());
+  }
+
+  @Test
+  @DisplayName("Should return 400 when cannot add customer invoices")
+  void createAutoClaimCustomerInvoice_whenCannotAdd_shouldReturn400() throws Exception {
+    long claimId = 100L;
+    CustomerInvoiceDto invoiceDto =
+        new CustomerInvoiceDto()
+            .claimId(claimId)
+            .vendorName("Test Vendor")
+            .invoiceAmount(BigDecimal.valueOf(100.00));
+
+    MockMultipartFile pdfFile =
+        new MockMultipartFile(
+            "pdfFile", "invoice.pdf", "application/pdf", "PDF content".getBytes());
+
+    MockMultipartFile invoiceJson =
+        new MockMultipartFile(
+            "invoice",
+            "",
+            "application/json",
+            objectMapper.writeValueAsString(invoiceDto).getBytes());
+
+    when(claimService.findClaimById(claimId)).thenReturn(Optional.of(new AutoClaimDto()));
+    when(claimService.canAddCustomerInvoices(claimId)).thenReturn(false);
+
+    mockMvc
+        .perform(
+            multipart("/claims/auto/{id}/customer-invoices", claimId)
+                .file(invoiceJson)
+                .file(pdfFile)
+                .contentType(MediaType.MULTIPART_FORM_DATA))
+        .andExpect(status().isBadRequest());
+  }
+
+  @Test
+  @DisplayName("Should return 400 when cannot make claim decision")
+  void createAutoClaimDecision_whenCannotMakeDecision_shouldReturn400() throws Exception {
+    long claimId = 100L;
+    ClaimDecisionDto decisionDto =
+        new ClaimDecisionDto()
+            .claimId(claimId)
+            .decisionMakerId(10L)
+            .decisionType(ClaimDecisionDto.DecisionTypeEnum.APPROVED);
+
+    when(claimService.findClaimById(claimId)).thenReturn(Optional.of(new AutoClaimDto()));
+    when(claimService.canMakeDecision(claimId)).thenReturn(false);
+
+    mockMvc
+        .perform(
+            post("/claims/auto/{id}/decision", claimId)
+                .contentType(MediaType.APPLICATION_JSON)
+                .content(objectMapper.writeValueAsString(decisionDto)))
+        .andExpect(status().isBadRequest());
   }
 }

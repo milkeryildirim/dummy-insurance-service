@@ -80,10 +80,17 @@ public class ClaimStorageServiceImpl implements ClaimStorageService {
     String relativePath =
         String.format("customer-invoices/claim-%d/invoice-%d/%s", claimId, invoiceId, fileName);
     Path targetPath = Paths.get(uploadDir, relativePath);
+    Path uploadRoot = Paths.get(uploadDir).normalize().toAbsolutePath();
+    Path normalizedTargetPath = targetPath.normalize().toAbsolutePath();
+
+    // Validate the resulting path does not escape the upload directory
+    if (!normalizedTargetPath.startsWith(uploadRoot)) {
+      throw new IllegalArgumentException("Invalid file path (potential traversal attempt)");
+    }
 
     try {
       // Create parent directories if they don't exist
-      Files.createDirectories(targetPath.getParent());
+      Files.createDirectories(normalizedTargetPath.getParent());
 
       // Copy file to target location
       Files.copy(file.getInputStream(), targetPath, StandardCopyOption.REPLACE_EXISTING);

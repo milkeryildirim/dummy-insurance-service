@@ -207,7 +207,7 @@ public class ClaimStorageServiceImpl implements ClaimStorageService {
     }
   }
 
-  /** Generates a unique file name while preserving the original extension. */
+  /** Generates a unique file name while preserving the original extension, ensuring it is safe. */
   private String generateFileName(String originalFilename) {
     if (originalFilename == null || originalFilename.trim().isEmpty()) {
       return UUID.randomUUID() + ".pdf";
@@ -216,7 +216,14 @@ public class ClaimStorageServiceImpl implements ClaimStorageService {
     String extension = "";
     int lastDotIndex = originalFilename.lastIndexOf('.');
     if (lastDotIndex > 0) {
+      // Get extension including leading dot
       extension = originalFilename.substring(lastDotIndex);
+      // Only allow extensions with alphanumeric characters, dot, and length up to 8
+      if (!extension.matches("\\.[A-Za-z0-9]{1,8}")) {
+        extension = ".pdf";
+      }
+    } else {
+      extension = ".pdf";
     }
 
     return UUID.randomUUID() + extension;

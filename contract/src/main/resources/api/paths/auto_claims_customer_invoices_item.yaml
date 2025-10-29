@@ -1,0 +1,55 @@
+get:
+  tags:
+    - AutoClaims
+  summary: "Get a specific customer invoice for an auto claim"
+  operationId: "getAutoClaimCustomerInvoiceById"
+  parameters:
+    - $ref: '../openapi.yaml#/components/parameters/ClaimId'
+    - $ref: '../openapi.yaml#/components/parameters/InvoiceId'
+  responses:
+    '200':
+      description: "Auto claim customer invoice details"
+      content:
+        application/json:
+          schema:
+            $ref: '../components/schemas/CustomerInvoiceDto.yaml'
+    '404':
+      description: "Auto claim or customer invoice not found"
+
+put:
+  tags:
+    - AutoClaims
+  summary: "Update a customer invoice for an auto claim"
+  operationId: "updateAutoClaimCustomerInvoice"
+  parameters:
+    - $ref: '../openapi.yaml#/components/parameters/ClaimId'
+    - $ref: '../openapi.yaml#/components/parameters/InvoiceId'
+  requestBody:
+    required: true
+    content:
+      application/json:
+        schema:
+          $ref: '../components/schemas/CustomerInvoiceDto.yaml'
+  responses:
+    '200':
+      description: "Auto claim customer invoice updated successfully"
+      content:
+        application/json:
+          schema:
+            $ref: '../components/schemas/CustomerInvoiceDto.yaml'
+    '404':
+      description: "Auto claim or customer invoice not found"
+
+delete:
+  tags:
+    - AutoClaims
+  summary: "Delete a customer invoice for an auto claim"
+  operationId: "deleteAutoClaimCustomerInvoice"
+  parameters:
+    - $ref: '../openapi.yaml#/components/parameters/ClaimId'
+    - $ref: '../openapi.yaml#/components/parameters/InvoiceId'
+  responses:
+    '204':
+      description: "Auto claim customer invoice deleted successfully"
+    '404':
+      description: "Auto claim or customer invoice not found"

@@ -8,6 +8,7 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.RestController;
 import tech.yildirim.insurance.api.generated.controller.EmployeesApi;
 import tech.yildirim.insurance.api.generated.model.EmployeeDto;
+import tech.yildirim.insurance.dummy.policy.PolicyType;
 
 /**
  * REST Controller for managing employees. Implements the generated {@link EmployeesApi} interface.
@@ -50,5 +51,41 @@ public class EmployeeController implements EmployeesApi {
               log.warn("Employee with id: {} not found, returning HTTP 404 NOT FOUND", id);
               return ResponseEntity.notFound().build();
             });
+  }
+
+  @Override
+  public ResponseEntity<List<EmployeeDto>> getAvailableAdjustersBySpecialization(
+      String specializationArea, String employmentType) {
+
+    log.info(
+        "REST request to find available adjusters for specialization: {} and employment type: {}",
+        specializationArea,
+        employmentType);
+
+    try {
+      PolicyType policyType = PolicyType.valueOf(specializationArea.toUpperCase());
+      EmploymentType empType =
+          employmentType != null
+              ? EmploymentType.valueOf(employmentType.toUpperCase())
+              : EmploymentType.EXTERNAL;
+
+      List<EmployeeDto> availableAdjusters =
+          employeeService.findAvailableAdjustersBySpecialization(policyType, empType);
+
+      log.info(
+          "Found {} available adjusters for specialization: {} and employment type: {}",
+          availableAdjusters.size(),
+          specializationArea,
+          employmentType);
+
+      return ResponseEntity.ok(availableAdjusters);
+
+    } catch (IllegalArgumentException e) {
+      log.warn(
+          "Invalid specialization area or employment type provided: {}, {}",
+          specializationArea,
+          employmentType);
+      return ResponseEntity.badRequest().build();
+    }
   }
 }

@@ -1,18 +1,19 @@
 package tech.yildirim.insurance.dummy.claim;
 
+import java.time.OffsetDateTime;
+import java.time.ZonedDateTime;
 import java.util.List;
 import org.mapstruct.Mapper;
 import org.mapstruct.Mapping;
 import org.mapstruct.MappingTarget;
-import org.mapstruct.factory.Mappers;
 import tech.yildirim.insurance.api.generated.model.AutoClaimDto;
 import tech.yildirim.insurance.api.generated.model.HealthClaimDto;
 import tech.yildirim.insurance.api.generated.model.HomeClaimDto;
 
-@Mapper(componentModel = "spring")
+@Mapper(
+    componentModel = "spring",
+    uses = {AdjusterReportMapper.class, CustomerInvoiceMapper.class, ClaimDecisionMapper.class})
 public interface ClaimMapper {
-
-  ClaimMapper INSTANCE = Mappers.getMapper(ClaimMapper.class);
 
   // ========== AutoClaim Mappings ==========
 
@@ -29,6 +30,9 @@ public interface ClaimMapper {
       expression =
           "java(autoClaim.getAssignedAdjuster() != null ? autoClaim.getAssignedAdjuster().getFirstName() + \" \" + autoClaim.getAssignedAdjuster().getLastName() : null)")
   @Mapping(source = "assignedAdjuster.phoneNumber", target = "assignedAdjusterContact")
+  @Mapping(source = "adjusterReports", target = "adjusterReports")
+  @Mapping(source = "customerInvoices", target = "customerInvoices")
+  @Mapping(source = "claimDecision", target = "claimDecision")
   AutoClaimDto toDto(AutoClaim autoClaim);
 
   /** Maps a list of AutoClaim entities to a list of AutoClaimDtos. */
@@ -47,6 +51,9 @@ public interface ClaimMapper {
   @Mapping(target = "status", ignore = true)
   @Mapping(target = "paidAmount", ignore = true)
   @Mapping(target = "assignedAdjuster", ignore = true)
+  @Mapping(target = "adjusterReports", ignore = true)
+  @Mapping(target = "customerInvoices", ignore = true)
+  @Mapping(target = "claimDecision", ignore = true)
   void populateAutoClaimFromDto(AutoClaimDto dto, @MappingTarget AutoClaim entity);
 
   // ========== HomeClaim Mappings ==========
@@ -64,6 +71,9 @@ public interface ClaimMapper {
       expression =
           "java(homeClaim.getAssignedAdjuster() != null ? homeClaim.getAssignedAdjuster().getFirstName() + \" \" + homeClaim.getAssignedAdjuster().getLastName() : null)")
   @Mapping(source = "assignedAdjuster.phoneNumber", target = "assignedAdjusterContact")
+  @Mapping(source = "adjusterReports", target = "adjusterReports")
+  @Mapping(source = "customerInvoices", target = "customerInvoices")
+  @Mapping(source = "claimDecision", target = "claimDecision")
   HomeClaimDto toDto(HomeClaim homeClaim);
 
   /** Maps a list of HomeClaim entities to a list of HomeClaimDtos. */
@@ -82,6 +92,9 @@ public interface ClaimMapper {
   @Mapping(target = "status", ignore = true)
   @Mapping(target = "paidAmount", ignore = true)
   @Mapping(target = "assignedAdjuster", ignore = true)
+  @Mapping(target = "adjusterReports", ignore = true)
+  @Mapping(target = "customerInvoices", ignore = true)
+  @Mapping(target = "claimDecision", ignore = true)
   void populateHomeClaimFromDto(HomeClaimDto dto, @MappingTarget HomeClaim entity);
 
   // ========== HealthClaim Mappings ==========
@@ -99,6 +112,9 @@ public interface ClaimMapper {
       expression =
           "java(healthClaim.getAssignedAdjuster() != null ? healthClaim.getAssignedAdjuster().getFirstName() + \" \" + healthClaim.getAssignedAdjuster().getLastName() : null)")
   @Mapping(source = "assignedAdjuster.phoneNumber", target = "assignedAdjusterContact")
+  @Mapping(source = "adjusterReports", target = "adjusterReports")
+  @Mapping(source = "customerInvoices", target = "customerInvoices")
+  @Mapping(source = "claimDecision", target = "claimDecision")
   HealthClaimDto toDto(HealthClaim healthClaim);
 
   /** Maps a list of HealthClaim entities to a list of HealthClaimDtos. */
@@ -117,6 +133,28 @@ public interface ClaimMapper {
   @Mapping(target = "status", ignore = true)
   @Mapping(target = "paidAmount", ignore = true)
   @Mapping(target = "assignedAdjuster", ignore = true)
+  @Mapping(target = "adjusterReports", ignore = true)
+  @Mapping(target = "customerInvoices", ignore = true)
+  @Mapping(target = "claimDecision", ignore = true)
   void populateHealthClaimFromDto(HealthClaimDto dto, @MappingTarget HealthClaim entity);
-}
 
+  /**
+   * Converts ZonedDateTime to OffsetDateTime.
+   *
+   * @param zonedDateTime The source ZonedDateTime.
+   * @return The converted OffsetDateTime.
+   */
+  default OffsetDateTime map(ZonedDateTime zonedDateTime) {
+    return zonedDateTime != null ? zonedDateTime.toOffsetDateTime() : null;
+  }
+
+  /**
+   * Converts OffsetDateTime to ZonedDateTime.
+   *
+   * @param offsetDateTime The source OffsetDateTime.
+   * @return The converted ZonedDateTime.
+   */
+  default ZonedDateTime map(OffsetDateTime offsetDateTime) {
+    return offsetDateTime != null ? offsetDateTime.toZonedDateTime() : null;
+  }
+}

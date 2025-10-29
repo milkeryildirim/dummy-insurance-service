@@ -3,6 +3,7 @@ package tech.yildirim.insurance.dummy.employee;
 import java.util.List;
 import java.util.Optional;
 import tech.yildirim.insurance.api.generated.model.EmployeeDto;
+import tech.yildirim.insurance.dummy.policy.PolicyType;
 
 /** Service Interface for managing {@link Employee}. */
 public interface EmployeeService {
@@ -29,4 +30,14 @@ public interface EmployeeService {
    * @return The created employee DTO.
    */
   EmployeeDto createEmployee(EmployeeDto employeeDto);
+
+  /**
+   * Finds available adjusters by their specialization area and employment type.
+   *
+   * @param specializationArea The policy type that the adjuster specializes in.
+   * @param employmentType The employment type (INTERNAL or EXTERNAL).
+   * @return A list of available adjuster DTOs matching the criteria.
+   */
+  List<EmployeeDto> findAvailableAdjustersBySpecialization(
+      PolicyType specializationArea, EmploymentType employmentType);
 }

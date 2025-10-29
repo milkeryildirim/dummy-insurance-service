@@ -12,7 +12,7 @@ spring:
     hibernate:
       ddl-auto: create-drop
     show-sql: true
-    defer-datasource-initialization: false # Test sırasında data.sql yükleme
+    defer-datasource-initialization: false
   sql:
     init:
-      mode: never # data.sql dosyalarını yükleme
+      mode: never

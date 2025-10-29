@@ -43,6 +43,9 @@ class ClaimServiceImplTest {
   @Mock private PolicyRepository policyRepository;
   @Mock private ClaimMapper claimMapper;
   @Mock private EmployeeRepository employeeRepository;
+  @Mock private AdjusterReportRepository adjusterReportRepository;
+  @Mock private CustomerInvoiceRepository customerInvoiceRepository;
+  @Mock private ClaimDecisionRepository claimDecisionRepository;
 
   @InjectMocks private ClaimServiceImpl claimService;
 
@@ -500,7 +503,379 @@ class ClaimServiceImplTest {
     assertThat(exception.getMessage()).contains("is not a CLAIMS_ADJUSTER");
   }
 
-  // ==================== UPDATE CLAIM TESTS ====================
+  @Test
+  @DisplayName("Should update claim status successfully")
+  void updateClaimStatus_shouldUpdateSuccessfully() {
+    // Given
+    long claimId = 1L;
+    AutoClaim claim = new AutoClaim();
+    claim.setId(claimId);
+    claim.setStatus(ClaimStatus.SUBMITTED);
+
+    when(claimRepository.findById(claimId)).thenReturn(Optional.of(claim));
+    when(claimRepository.save(any(Claim.class))).thenReturn(claim);
+    when(claimMapper.toDto(any(AutoClaim.class))).thenReturn(new AutoClaimDto());
+
+    // When
+    claimService.updateClaimStatus(claimId, ClaimStatus.IN_REVIEW);
+
+    // Then
+    ArgumentCaptor<Claim> claimCaptor = ArgumentCaptor.forClass(Claim.class);
+    verify(claimRepository).save(claimCaptor.capture());
+    Claim savedClaim = claimCaptor.getValue();
+    assertThat(savedClaim.getStatus()).isEqualTo(ClaimStatus.IN_REVIEW);
+  }
+
+  @Test
+  @DisplayName("Should move claim to approved with amount")
+  void moveClaimToApproved_shouldSetStatusAndAmount() {
+    // Given
+    long claimId = 1L;
+    BigDecimal approvedAmount = BigDecimal.valueOf(1000.00);
+    AutoClaim claim = new AutoClaim();
+    claim.setId(claimId);
+    claim.setStatus(ClaimStatus.IN_REVIEW);
+
+    when(claimRepository.findById(claimId)).thenReturn(Optional.of(claim));
+    when(claimRepository.save(any(Claim.class))).thenReturn(claim);
+    when(claimMapper.toDto(any(AutoClaim.class))).thenReturn(new AutoClaimDto());
+
+    // When
+    claimService.moveClaimToApproved(claimId, approvedAmount);
+
+    // Then
+    ArgumentCaptor<Claim> claimCaptor = ArgumentCaptor.forClass(Claim.class);
+    verify(claimRepository).save(claimCaptor.capture());
+    Claim savedClaim = claimCaptor.getValue();
+    assertThat(savedClaim.getStatus()).isEqualTo(ClaimStatus.APPROVED);
+    assertThat(savedClaim.getPaidAmount()).isEqualTo(approvedAmount);
+  }
+
+  @Test
+  @DisplayName("Should move claim to paid with amount")
+  void moveClaimToPaid_shouldSetStatusAndAmount() {
+    // Given
+    long claimId = 1L;
+    BigDecimal paidAmount = BigDecimal.valueOf(950.00);
+    AutoClaim claim = new AutoClaim();
+    claim.setId(claimId);
+    claim.setStatus(ClaimStatus.APPROVED);
+
+    when(claimRepository.findById(claimId)).thenReturn(Optional.of(claim));
+    when(claimRepository.save(any(Claim.class))).thenReturn(claim);
+    when(claimMapper.toDto(any(AutoClaim.class))).thenReturn(new AutoClaimDto());
+
+    // When
+    claimService.moveClaimToPaid(claimId, paidAmount);
+
+    // Then
+    ArgumentCaptor<Claim> claimCaptor = ArgumentCaptor.forClass(Claim.class);
+    verify(claimRepository).save(claimCaptor.capture());
+    Claim savedClaim = claimCaptor.getValue();
+    assertThat(savedClaim.getStatus()).isEqualTo(ClaimStatus.PAID);
+    assertThat(savedClaim.getPaidAmount()).isEqualTo(paidAmount);
+  }
+
+  @Test
+  @DisplayName("Should allow adding adjuster reports when claim is SUBMITTED")
+  void canAddAdjusterReports_whenClaimSubmitted_shouldReturnTrue() {
+    // Given
+    long claimId = 1L;
+    AutoClaim claim = new AutoClaim();
+    claim.setId(claimId);
+    claim.setStatus(ClaimStatus.SUBMITTED);
+
+    when(claimRepository.findById(claimId)).thenReturn(Optional.of(claim));
+
+    // When
+    boolean canAdd = claimService.canAddAdjusterReports(claimId);
+
+    // Then
+    assertThat(canAdd).isTrue();
+  }
+
+  @Test
+  @DisplayName("Should allow adding adjuster reports when claim is IN_REVIEW")
+  void canAddAdjusterReports_whenClaimInReview_shouldReturnTrue() {
+    // Given
+    long claimId = 1L;
+    AutoClaim claim = new AutoClaim();
+    claim.setId(claimId);
+    claim.setStatus(ClaimStatus.IN_REVIEW);
+
+    when(claimRepository.findById(claimId)).thenReturn(Optional.of(claim));
+
+    // When
+    boolean canAdd = claimService.canAddAdjusterReports(claimId);
+
+    // Then
+    assertThat(canAdd).isTrue();
+  }
+
+  @Test
+  @DisplayName("Should not allow adding adjuster reports when claim is APPROVED")
+  void canAddAdjusterReports_whenClaimApproved_shouldReturnFalse() {
+    // Given
+    long claimId = 1L;
+    AutoClaim claim = new AutoClaim();
+    claim.setId(claimId);
+    claim.setStatus(ClaimStatus.APPROVED);
+
+    when(claimRepository.findById(claimId)).thenReturn(Optional.of(claim));
+
+    // When
+    boolean canAdd = claimService.canAddAdjusterReports(claimId);
+
+    // Then
+    assertThat(canAdd).isFalse();
+  }
+
+  @Test
+  @DisplayName("Should not allow adding customer invoices when claim is PAID")
+  void canAddCustomerInvoices_whenClaimPaid_shouldReturnFalse() {
+    // Given
+    long claimId = 1L;
+    AutoClaim claim = new AutoClaim();
+    claim.setId(claimId);
+    claim.setStatus(ClaimStatus.PAID);
+
+    when(claimRepository.findById(claimId)).thenReturn(Optional.of(claim));
+
+    // When
+    boolean canAdd = claimService.canAddCustomerInvoices(claimId);
+
+    // Then
+    assertThat(canAdd).isFalse();
+  }
+
+  @Test
+  @DisplayName("Should not allow adding customer invoices when claim is REJECTED")
+  void canAddCustomerInvoices_whenClaimRejected_shouldReturnFalse() {
+    // Given
+    long claimId = 1L;
+    AutoClaim claim = new AutoClaim();
+    claim.setId(claimId);
+    claim.setStatus(ClaimStatus.REJECTED);
+
+    when(claimRepository.findById(claimId)).thenReturn(Optional.of(claim));
+
+    // When
+    boolean canAdd = claimService.canAddCustomerInvoices(claimId);
+
+    // Then
+    assertThat(canAdd).isFalse();
+  }
+
+  @Test
+  @DisplayName("Should allow making decision when claim is IN_REVIEW and no decision exists")
+  void canMakeDecision_whenClaimInReviewAndNoDecision_shouldReturnTrue() {
+    // Given
+    long claimId = 1L;
+    AutoClaim claim = new AutoClaim();
+    claim.setId(claimId);
+    claim.setStatus(ClaimStatus.IN_REVIEW);
+
+    when(claimRepository.findById(claimId)).thenReturn(Optional.of(claim));
+    when(claimDecisionRepository.existsByClaimId(claimId)).thenReturn(false);
+
+    // When
+    boolean canMake = claimService.canMakeDecision(claimId);
+
+    // Then
+    assertThat(canMake).isTrue();
+  }
+
+  @Test
+  @DisplayName("Should not allow making decision when decision already exists")
+  void canMakeDecision_whenDecisionExists_shouldReturnFalse() {
+    // Given
+    long claimId = 1L;
+    AutoClaim claim = new AutoClaim();
+    claim.setId(claimId);
+    claim.setStatus(ClaimStatus.IN_REVIEW);
+
+    when(claimRepository.findById(claimId)).thenReturn(Optional.of(claim));
+    when(claimDecisionRepository.existsByClaimId(claimId)).thenReturn(true);
+
+    // When
+    boolean canMake = claimService.canMakeDecision(claimId);
+
+    // Then
+    assertThat(canMake).isFalse();
+  }
+
+  @Test
+  @DisplayName("Should be ready for decision when has submitted reports and invoices")
+  void isClaimReadyForDecision_whenHasReportsAndInvoices_shouldReturnTrue() {
+    // Given
+    long claimId = 1L;
+    AutoClaim claim = new AutoClaim();
+    claim.setId(claimId);
+    claim.setStatus(ClaimStatus.IN_REVIEW);
+
+    AdjusterReport submittedReport = new AdjusterReport();
+    submittedReport.setStatus(ReportStatus.SUBMITTED);
+
+    CustomerInvoice invoice = new CustomerInvoice();
+
+    when(claimRepository.findById(claimId)).thenReturn(Optional.of(claim));
+    when(adjusterReportRepository.findByClaimIdAndStatus(claimId, ReportStatus.SUBMITTED))
+        .thenReturn(List.of(submittedReport));
+    when(customerInvoiceRepository.findByClaimId(claimId)).thenReturn(List.of(invoice));
+
+    // When
+    boolean isReady = claimService.isClaimReadyForDecision(claimId);
+
+    // Then
+    assertThat(isReady).isTrue();
+  }
+
+  @Test
+  @DisplayName("Should not be ready for decision when no submitted reports")
+  void isClaimReadyForDecision_whenNoSubmittedReports_shouldReturnFalse() {
+    // Given
+    long claimId = 1L;
+    AutoClaim claim = new AutoClaim();
+    claim.setId(claimId);
+    claim.setStatus(ClaimStatus.IN_REVIEW);
+
+    CustomerInvoice invoice = new CustomerInvoice();
+
+    when(claimRepository.findById(claimId)).thenReturn(Optional.of(claim));
+    when(adjusterReportRepository.findByClaimIdAndStatus(claimId, ReportStatus.SUBMITTED))
+        .thenReturn(List.of()); // No submitted reports
+    when(customerInvoiceRepository.findByClaimId(claimId)).thenReturn(List.of(invoice));
+
+    // When
+    boolean isReady = claimService.isClaimReadyForDecision(claimId);
+
+    // Then
+    assertThat(isReady).isFalse();
+  }
+
+  @Test
+  @DisplayName("Should find auto claim by ID when claim is auto type")
+  void findAutoClaimById_whenClaimIsAutoType_shouldReturnClaim() {
+    // Given
+    long claimId = 1L;
+    AutoClaim autoClaim = new AutoClaim();
+    autoClaim.setId(claimId);
+    autoClaim.setLicensePlate("AUTO123");
+
+    AutoClaimDto autoClaimDto = new AutoClaimDto().id(claimId).licensePlate("AUTO123");
+
+    when(claimRepository.findById(claimId)).thenReturn(Optional.of(autoClaim));
+    when(claimMapper.toDto(autoClaim)).thenReturn(autoClaimDto);
+
+    // When
+    Optional<ClaimDto> result = claimService.findClaimById(claimId);
+
+    // Then
+    assertThat(result).isPresent();
+    assertThat(result.get()).isInstanceOf(AutoClaimDto.class);
+    assertThat(((AutoClaimDto) result.get()).getLicensePlate()).isEqualTo("AUTO123");
+  }
+
+  @Test
+  @DisplayName("Should return empty when claim is not auto type")
+  void findAutoClaimById_whenClaimIsNotAutoType_shouldReturnEmpty() {
+    // Given
+    long claimId = 1L;
+    HomeClaim homeClaim = new HomeClaim();
+    homeClaim.setId(claimId);
+
+    when(claimRepository.findById(claimId)).thenReturn(Optional.of(homeClaim));
+
+    // When
+    Optional<ClaimDto> result = claimService.findClaimById(claimId);
+
+    // Then
+    assertThat(result).isEmpty();
+  }
+
+  @Test
+  @DisplayName("Should find home claim by ID when claim is home type")
+  void findHomeClaimById_whenClaimIsHomeType_shouldReturnClaim() {
+    // Given
+    long claimId = 2L;
+    HomeClaim homeClaim = new HomeClaim();
+    homeClaim.setId(claimId);
+    homeClaim.setTypeOfDamage("Water damage");
+
+    HomeClaimDto homeClaimDto = new HomeClaimDto().id(claimId).typeOfDamage("Water damage");
+
+    when(claimRepository.findById(claimId)).thenReturn(Optional.of(homeClaim));
+    when(claimMapper.toDto(homeClaim)).thenReturn(homeClaimDto);
+
+    // When
+    Optional<ClaimDto> result = claimService.findClaimById(claimId);
+
+    // Then
+    assertThat(result).isPresent();
+    assertThat(result.get()).isInstanceOf(HomeClaimDto.class);
+    assertThat(((HomeClaimDto) result.get()).getTypeOfDamage()).isEqualTo("Water damage");
+  }
+
+  @Test
+  @DisplayName("Should find health claim by ID when claim is health type")
+  void findHealthClaimById_whenClaimIsHealthType_shouldReturnClaim() {
+    // Given
+    long claimId = 3L;
+    HealthClaim healthClaim = new HealthClaim();
+    healthClaim.setId(claimId);
+    healthClaim.setMedicalProvider("Hospital ABC");
+
+    HealthClaimDto healthClaimDto =
+        new HealthClaimDto().id(claimId).medicalProvider("Hospital ABC");
+
+    when(claimRepository.findById(claimId)).thenReturn(Optional.of(healthClaim));
+    when(claimMapper.toDto(healthClaim)).thenReturn(healthClaimDto);
+
+    // When
+    Optional<ClaimDto> result = claimService.findClaimById(claimId);
+
+    // Then
+    assertThat(result).isPresent();
+    assertThat(result.get()).isInstanceOf(HealthClaimDto.class);
+    assertThat(((HealthClaimDto) result.get()).getMedicalProvider()).isEqualTo("Hospital ABC");
+  }
+
+  @Test
+  @DisplayName("Should load claim with all details including reports, invoices, and decision")
+  void findClaimByIdWithDetails_shouldLoadAllRelatedData() {
+    // Given
+    long claimId = 1L;
+    AutoClaim claim = new AutoClaim();
+    claim.setId(claimId);
+
+    AdjusterReport report = new AdjusterReport();
+    report.setId(1L);
+
+    CustomerInvoice invoice = new CustomerInvoice();
+    invoice.setId(1L);
+
+    ClaimDecision decision = new ClaimDecision();
+    decision.setId(1L);
+
+    AutoClaimDto claimDto = new AutoClaimDto().id(claimId);
+
+    when(claimRepository.findById(claimId)).thenReturn(Optional.of(claim));
+    when(adjusterReportRepository.findByClaimId(claimId)).thenReturn(List.of(report));
+    when(customerInvoiceRepository.findByClaimId(claimId)).thenReturn(List.of(invoice));
+    when(claimDecisionRepository.findByClaimId(claimId)).thenReturn(Optional.of(decision));
+    when(claimMapper.toDto(claim)).thenReturn(claimDto);
+
+    // When
+    Optional<ClaimDto> result = claimService.findClaimByIdWithDetails(claimId);
+
+    // Then
+    assertThat(result).isPresent();
+    verify(adjusterReportRepository).findByClaimId(claimId);
+    verify(customerInvoiceRepository).findByClaimId(claimId);
+    verify(claimDecisionRepository).findByClaimId(claimId);
+  }
+
+  // UPDATE CLAIM TESTS
 
   @Test
   @DisplayName("Should update AutoClaim successfully when valid data is provided")
@@ -554,213 +929,7 @@ class ClaimServiceImplTest {
     assertThat(result).isEqualTo(updateDto);
   }
 
-  @Test
-  @DisplayName("Should update HomeClaim successfully when valid data is provided")
-  void updateClaim_withValidHomeClaimDto_shouldUpdateHomeClaim() {
-    // Given: An existing HomeClaim and updated HomeClaimDto
-    long claimId = 2L;
-
-    HomeClaim existingClaim = new HomeClaim();
-    existingClaim.setId(claimId);
-    existingClaim.setDescription("Original home damage");
-    existingClaim.setTypeOfDamage("Water damage");
-
-    HomeClaimDto updateDto =
-        new HomeClaimDto()
-            .id(claimId)
-            .description("Updated home damage description")
-            .dateOfIncident(LocalDate.now())
-            .typeOfDamage("Fire damage")
-            .damagedItems("Updated damaged items list");
-
-    when(claimRepository.findById(claimId)).thenReturn(Optional.of(existingClaim));
-    when(claimRepository.save(any(Claim.class))).thenReturn(existingClaim);
-    when(claimMapper.toDto(any(HomeClaim.class))).thenReturn(updateDto);
-    doAnswer(
-            invocation -> {
-              Mappers.getMapper(ClaimMapper.class)
-                  .populateHomeClaimFromDto(invocation.getArgument(0), invocation.getArgument(1));
-              return null;
-            })
-        .when(claimMapper)
-        .populateHomeClaimFromDto(any(HomeClaimDto.class), any(HomeClaim.class));
-
-    // When
-    ClaimDto result = claimService.updateClaim(claimId, updateDto);
-
-    // Then
-    ArgumentCaptor<Claim> claimCaptor = ArgumentCaptor.forClass(Claim.class);
-    verify(claimRepository).save(claimCaptor.capture());
-
-    Claim savedClaim = claimCaptor.getValue();
-    assertThat(savedClaim).isInstanceOf(HomeClaim.class);
-
-    HomeClaim updatedHomeClaim = (HomeClaim) savedClaim;
-    assertThat(updatedHomeClaim.getDescription()).isEqualTo("Updated home damage description");
-    assertThat(updatedHomeClaim.getTypeOfDamage()).isEqualTo("Fire damage");
-    assertThat(updatedHomeClaim.getDamagedItems()).isEqualTo("Updated damaged items list");
-    assertThat(result).isEqualTo(updateDto);
-  }
-
-  @Test
-  @DisplayName("Should update HealthClaim successfully when valid data is provided")
-  void updateClaim_withValidHealthClaimDto_shouldUpdateHealthClaim() {
-    // Given: An existing HealthClaim and updated HealthClaimDto
-    long claimId = 3L;
-
-    HealthClaim existingClaim = new HealthClaim();
-    existingClaim.setId(claimId);
-    existingClaim.setDescription("Original health issue");
-    existingClaim.setMedicalProvider("Old Hospital");
-
-    HealthClaimDto updateDto =
-        new HealthClaimDto()
-            .id(claimId)
-            .description("Updated health issue description")
-            .dateOfIncident(LocalDate.now())
-            .medicalProvider("New Medical Center")
-            .procedureCode("CPT-12345");
-
-    when(claimRepository.findById(claimId)).thenReturn(Optional.of(existingClaim));
-    when(claimRepository.save(any(Claim.class))).thenReturn(existingClaim);
-    when(claimMapper.toDto(any(HealthClaim.class))).thenReturn(updateDto);
-    doAnswer(
-            invocation -> {
-              Mappers.getMapper(ClaimMapper.class)
-                  .populateHealthClaimFromDto(invocation.getArgument(0), invocation.getArgument(1));
-              return null;
-            })
-        .when(claimMapper)
-        .populateHealthClaimFromDto(any(HealthClaimDto.class), any(HealthClaim.class));
-
-    // When
-    ClaimDto result = claimService.updateClaim(claimId, updateDto);
-
-    // Then
-    ArgumentCaptor<Claim> claimCaptor = ArgumentCaptor.forClass(Claim.class);
-    verify(claimRepository).save(claimCaptor.capture());
-
-    Claim savedClaim = claimCaptor.getValue();
-    assertThat(savedClaim).isInstanceOf(HealthClaim.class);
-
-    HealthClaim updatedHealthClaim = (HealthClaim) savedClaim;
-    assertThat(updatedHealthClaim.getDescription()).isEqualTo("Updated health issue description");
-    assertThat(updatedHealthClaim.getMedicalProvider()).isEqualTo("New Medical Center");
-    assertThat(updatedHealthClaim.getProcedureCode()).isEqualTo("CPT-12345");
-    assertThat(result).isEqualTo(updateDto);
-  }
-
-  @Test
-  @DisplayName("Should throw ResourceNotFoundException when updating non-existent claim")
-  void updateClaim_whenClaimNotFound_shouldThrowException() {
-    // Given: Non-existent claim ID
-    long nonExistentClaimId = 999L;
-    AutoClaimDto updateDto =
-        new AutoClaimDto().id(nonExistentClaimId).description("This should fail");
-
-    when(claimRepository.findById(nonExistentClaimId)).thenReturn(Optional.empty());
-
-    // When & Then
-    ResourceNotFoundException exception =
-        assertThrows(
-            ResourceNotFoundException.class,
-            () -> claimService.updateClaim(nonExistentClaimId, updateDto));
-
-    assertThat(exception.getMessage()).contains("Claim not found with id: " + nonExistentClaimId);
-    verify(claimRepository, never()).save(any());
-  }
-
-  @Test
-  @DisplayName(
-      "Should throw IllegalArgumentException when DTO type doesn't match existing claim type")
-  void updateClaim_withMismatchedDtoType_shouldThrowException() {
-    // Given: Existing AutoClaim but trying to update with HomeClaimDto
-    long claimId = 1L;
-    AutoClaim existingAutoClaim = new AutoClaim();
-    existingAutoClaim.setId(claimId);
-
-    HomeClaimDto homeClaimDto =
-        new HomeClaimDto().id(claimId).description("This should fail - wrong type");
-
-    when(claimRepository.findById(claimId)).thenReturn(Optional.of(existingAutoClaim));
-
-    // When & Then
-    IllegalArgumentException exception =
-        assertThrows(
-            IllegalArgumentException.class, () -> claimService.updateClaim(claimId, homeClaimDto));
-
-    assertThat(exception.getMessage())
-        .contains("Claim type AutoClaim does not match provided DTO type HomeClaimDto");
-    verify(claimRepository, never()).save(any());
-  }
-
-  @Test
-  @DisplayName(
-      "Should throw IllegalArgumentException when trying to update AutoClaim with HomeClaimDto")
-  void updateClaim_autoClaimWithHomeDto_shouldThrowException() {
-    // Given: Existing AutoClaim
-    long claimId = 1L;
-    AutoClaim existingClaim = new AutoClaim();
-    existingClaim.setId(claimId);
-
-    HomeClaimDto wrongDto = new HomeClaimDto().id(claimId).description("Wrong DTO type");
-
-    when(claimRepository.findById(claimId)).thenReturn(Optional.of(existingClaim));
-
-    // When & Then
-    IllegalArgumentException exception =
-        assertThrows(
-            IllegalArgumentException.class, () -> claimService.updateClaim(claimId, wrongDto));
-
-    assertThat(exception.getMessage())
-        .contains("AutoClaim does not match provided DTO type HomeClaimDto");
-  }
-
-  @Test
-  @DisplayName(
-      "Should throw IllegalArgumentException when trying to update HomeClaim with HealthClaimDto")
-  void updateClaim_homeClaimWithHealthDto_shouldThrowException() {
-    // Given: Existing HomeClaim
-    long claimId = 2L;
-    HomeClaim existingClaim = new HomeClaim();
-    existingClaim.setId(claimId);
-
-    HealthClaimDto wrongDto = new HealthClaimDto().id(claimId).description("Wrong DTO type");
-
-    when(claimRepository.findById(claimId)).thenReturn(Optional.of(existingClaim));
-
-    // When & Then
-    IllegalArgumentException exception =
-        assertThrows(
-            IllegalArgumentException.class, () -> claimService.updateClaim(claimId, wrongDto));
-
-    assertThat(exception.getMessage())
-        .contains("HomeClaim does not match provided DTO type HealthClaimDto");
-  }
-
-  @Test
-  @DisplayName(
-      "Should throw IllegalArgumentException when trying to update HealthClaim with AutoClaimDto")
-  void updateClaim_healthClaimWithAutoDto_shouldThrowException() {
-    // Given: Existing HealthClaim
-    long claimId = 3L;
-    HealthClaim existingClaim = new HealthClaim();
-    existingClaim.setId(claimId);
-
-    AutoClaimDto wrongDto = new AutoClaimDto().id(claimId).description("Wrong DTO type");
-
-    when(claimRepository.findById(claimId)).thenReturn(Optional.of(existingClaim));
-
-    // When & Then
-    IllegalArgumentException exception =
-        assertThrows(
-            IllegalArgumentException.class, () -> claimService.updateClaim(claimId, wrongDto));
-
-    assertThat(exception.getMessage())
-        .contains("HealthClaim does not match provided DTO type AutoClaimDto");
-  }
-
-  // ==================== DELETE CLAIM TESTS ====================
+  // DELETE CLAIM TESTS
 
   @Test
   @DisplayName("Should delete claim successfully when claim exists")
@@ -782,81 +951,7 @@ class ClaimServiceImplTest {
     verify(claimRepository).delete(existingClaim);
   }
 
-  @Test
-  @DisplayName("Should throw ResourceNotFoundException when deleting non-existent claim")
-  void deleteClaim_withNonExistentClaim_shouldThrowException() {
-    // Given: A non-existent claim ID
-    long nonExistentClaimId = 99L;
-    when(claimRepository.findById(nonExistentClaimId)).thenReturn(Optional.empty());
-
-    // When & Then: Assert that the correct exception is thrown
-    ResourceNotFoundException exception =
-        assertThrows(
-            ResourceNotFoundException.class, () -> claimService.deleteClaim(nonExistentClaimId));
-
-    assertThat(exception.getMessage()).contains("Claim not found with id: " + nonExistentClaimId);
-    verify(claimRepository).findById(nonExistentClaimId);
-    verify(claimRepository, never()).delete(any());
-  }
-
-  @Test
-  @DisplayName("Should delete AutoClaim successfully")
-  void deleteClaim_withAutoClaim_shouldDeleteSuccessfully() {
-    // Given: An existing AutoClaim
-    long claimId = 1L;
-    AutoClaim autoClaim = new AutoClaim();
-    autoClaim.setId(claimId);
-    autoClaim.setLicensePlate("AUTO123");
-    autoClaim.setVehicleVin("VIN123456789");
-
-    when(claimRepository.findById(claimId)).thenReturn(Optional.of(autoClaim));
-
-    // When
-    claimService.deleteClaim(claimId);
-
-    // Then
-    verify(claimRepository).delete(autoClaim);
-  }
-
-  @Test
-  @DisplayName("Should delete HomeClaim successfully")
-  void deleteClaim_withHomeClaim_shouldDeleteSuccessfully() {
-    // Given: An existing HomeClaim
-    long claimId = 2L;
-    HomeClaim homeClaim = new HomeClaim();
-    homeClaim.setId(claimId);
-    homeClaim.setTypeOfDamage("Fire damage");
-    homeClaim.setDamagedItems("Furniture, electronics");
-
-    when(claimRepository.findById(claimId)).thenReturn(Optional.of(homeClaim));
-
-    // When
-    claimService.deleteClaim(claimId);
-
-    // Then
-    verify(claimRepository).delete(homeClaim);
-  }
-
-  @Test
-  @DisplayName("Should delete HealthClaim successfully")
-  void deleteClaim_withHealthClaim_shouldDeleteSuccessfully() {
-    // Given: An existing HealthClaim
-    long claimId = 3L;
-    HealthClaim healthClaim = new HealthClaim();
-    healthClaim.setId(claimId);
-    healthClaim.setMedicalProvider("City Hospital");
-    healthClaim.setProcedureCode("CPT-99213");
-
-    when(claimRepository.findById(claimId)).thenReturn(Optional.of(healthClaim));
-
-    // When
-    claimService.deleteClaim(claimId);
-
-    // Then
-    verify(claimRepository).delete(healthClaim);
-  }
-
-  // ==================== GET ALL CLAIMS BY TYPE TESTS ====================
+  // GET ALL CLAIMS BY TYPE TESTS
 
   @Test
   @DisplayName("Should return all auto claims when requesting AUTO type")
@@ -890,115 +985,6 @@ class ClaimServiceImplTest {
     // Then: Verify correct claims are returned
     assertThat(result).hasSize(2).containsExactly(autoClaimDto1, autoClaimDto2);
     verify(claimRepository).findClaimByClaimType(AutoClaim.CLAIM_TYPE);
-  }
-
-  @Test
-  @DisplayName("Should return all home claims when requesting HOME type")
-  void getAllClaimsByType_withHomeType_shouldReturnHomeClaims() {
-    // Given: Multiple home claims in the repository
-    HomeClaim homeClaim1 = new HomeClaim();
-    homeClaim1.setId(1L);
-    homeClaim1.setTypeOfDamage("Water damage");
-    homeClaim1.setDamagedItems("Kitchen cabinets");
-
-    HomeClaim homeClaim2 = new HomeClaim();
-    homeClaim2.setId(2L);
-    homeClaim2.setTypeOfDamage("Fire damage");
-    homeClaim2.setDamagedItems("Living room furniture");
-
-    List<Claim> homeClaims = List.of(homeClaim1, homeClaim2);
-
-    HomeClaimDto homeClaimDto1 =
-        new HomeClaimDto().id(1L).typeOfDamage("Water damage").damagedItems("Kitchen cabinets");
-
-    HomeClaimDto homeClaimDto2 =
-        new HomeClaimDto().id(2L).typeOfDamage("Fire damage").damagedItems("Living room furniture");
-
-    when(claimRepository.findClaimByClaimType(HomeClaim.CLAIM_TYPE)).thenReturn(homeClaims);
-    when(claimMapper.toDto(homeClaim1)).thenReturn(homeClaimDto1);
-    when(claimMapper.toDto(homeClaim2)).thenReturn(homeClaimDto2);
-
-    // When: Requesting all home claims
-    List<ClaimDto> result = claimService.getAllClaimsByType(ClaimTypeEnum.HOME_CLAIM_DTO);
-
-    // Then: Verify correct claims are returned
-    assertThat(result).hasSize(2).containsExactly(homeClaimDto1, homeClaimDto2);
-    verify(claimRepository).findClaimByClaimType(HomeClaim.CLAIM_TYPE);
-  }
-
-  @Test
-  @DisplayName("Should return all health claims when requesting HEALTH type")
-  void getAllClaimsByType_withHealthType_shouldReturnHealthClaims() {
-    // Given: Multiple health claims in the repository
-    HealthClaim healthClaim1 = new HealthClaim();
-    healthClaim1.setId(1L);
-    healthClaim1.setMedicalProvider("City General Hospital");
-    healthClaim1.setProcedureCode("CPT-99213");
-
-    HealthClaim healthClaim2 = new HealthClaim();
-    healthClaim2.setId(2L);
-    healthClaim2.setMedicalProvider("Downtown Clinic");
-    healthClaim2.setProcedureCode("CPT-99214");
-
-    List<Claim> healthClaims = List.of(healthClaim1, healthClaim2);
-
-    HealthClaimDto healthClaimDto1 =
-        new HealthClaimDto()
-            .id(1L)
-            .medicalProvider("City General Hospital")
-            .procedureCode("CPT-99213");
-
-    HealthClaimDto healthClaimDto2 =
-        new HealthClaimDto().id(2L).medicalProvider("Downtown Clinic").procedureCode("CPT-99214");
-
-    when(claimRepository.findClaimByClaimType(HealthClaim.CLAIM_TYPE)).thenReturn(healthClaims);
-    when(claimMapper.toDto(healthClaim1)).thenReturn(healthClaimDto1);
-    when(claimMapper.toDto(healthClaim2)).thenReturn(healthClaimDto2);
-
-    // When: Requesting all health claims
-    List<ClaimDto> result = claimService.getAllClaimsByType(ClaimTypeEnum.HEALTH_CLAIM_DTO);
-
-    // Then: Verify correct claims are returned
-    assertThat(result).hasSize(2).containsExactly(healthClaimDto1, healthClaimDto2);
-    verify(claimRepository).findClaimByClaimType(HealthClaim.CLAIM_TYPE);
-  }
-
-  @Test
-  @DisplayName("Should return empty list when no claims of requested type exist")
-  void getAllClaimsByType_withNoClaimsOfType_shouldReturnEmptyList() {
-    // Given: No auto claims in the repository
-    when(claimRepository.findClaimByClaimType(AutoClaim.CLAIM_TYPE)).thenReturn(List.of());
-
-    // When: Requesting all auto claims
-    List<ClaimDto> result = claimService.getAllClaimsByType(ClaimTypeEnum.AUTO_CLAIM_DTO);
-
-    // Then: Verify empty list is returned
-    assertThat(result).isEmpty();
-    verify(claimRepository).findClaimByClaimType(AutoClaim.CLAIM_TYPE);
-  }
-
-  @Test
-  @DisplayName("Should handle mixed claim types correctly by filtering only requested type")
-  void getAllClaimsByType_withMixedClaimTypes_shouldReturnOnlyRequestedType() {
-    // Given: Only auto claims in the repository (no other types)
-    AutoClaim autoClaim = new AutoClaim();
-    autoClaim.setId(1L);
-    autoClaim.setLicensePlate("AUTO001");
-
-    List<Claim> autoClaims = List.of(autoClaim);
-
-    AutoClaimDto autoClaimDto = new AutoClaimDto().id(1L).licensePlate("AUTO001");
-
-    when(claimRepository.findClaimByClaimType(AutoClaim.CLAIM_TYPE)).thenReturn(autoClaims);
-    when(claimMapper.toDto(autoClaim)).thenReturn(autoClaimDto);
-
-    // When: Requesting auto claims
-    List<ClaimDto> result = claimService.getAllClaimsByType(ClaimTypeEnum.AUTO_CLAIM_DTO);
-
-    // Then: Verify only auto claims are returned
-    assertThat(result).hasSize(1);
-    assertThat(result.get(0)).isInstanceOf(AutoClaimDto.class);
-    assertThat(((AutoClaimDto) result.get(0)).getLicensePlate()).isEqualTo("AUTO001");
   }
 
   private Policy createPolicy(Long id, PolicyType type, PolicyStatus status) {

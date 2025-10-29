@@ -1,0 +1,41 @@
+patch:
+  summary: "Update partner vendor status"
+  description: "Update the status of a partner vendor"
+  tags:
+    - "PartnerVendors"
+  parameters:
+    - name: id
+      in: path
+      description: "The unique identifier of the partner vendor"
+      required: true
+      schema:
+        type: integer
+        format: int64
+  requestBody:
+    required: true
+    content:
+      application/json:
+        schema:
+          type: object
+          required:
+            - status
+          properties:
+            status:
+              type: string
+              enum:
+                - ACTIVE
+                - INACTIVE
+                - SUSPENDED
+                - PENDING_APPROVAL
+              description: "New status for the vendor"
+  responses:
+    '200':
+      description: "Vendor status updated successfully"
+      content:
+        application/json:
+          schema:
+            $ref: '../components/schemas/PartnerVendorDto.yaml'
+    '400':
+      description: "Invalid status value"
+    '404':
+      description: "Partner vendor not found"

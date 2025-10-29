@@ -1,0 +1,106 @@
+type: object
+required:
+  - vendorCode
+  - companyName
+  - contactPerson
+  - email
+  - vendorType
+  - status
+properties:
+  id:
+    type: integer
+    format: int64
+    description: "Unique identifier for the partner vendor"
+    readOnly: true
+  vendorCode:
+    type: string
+    maxLength: 100
+    description: "Unique vendor code used for identification"
+    example: "VND-AUTO-001"
+  companyName:
+    type: string
+    maxLength: 255
+    description: "Legal company name of the partner vendor"
+    example: "AutoWerkstatt Schmidt & Söhne GmbH"
+  contactPerson:
+    type: string
+    maxLength: 255
+    description: "Primary contact person at the vendor company"
+    example: "Hans Schmidt"
+  email:
+    type: string
+    format: email
+    maxLength: 255
+    description: "Email address for vendor communication"
+    example: "kontakt@auto-schmidt.de"
+  phoneNumber:
+    type: string
+    maxLength: 50
+    description: "Phone number for vendor contact"
+    example: "+49 30 555 2001"
+  address:
+    type: string
+    maxLength: 255
+    description: "Physical address of the vendor"
+    example: "Berliner Str. 45"
+  city:
+    type: string
+    maxLength: 100
+    description: "City where vendor is located"
+    example: "Berlin"
+  postalCode:
+    type: string
+    maxLength: 20
+    description: "Postal code of vendor location"
+    example: "10115"
+  country:
+    type: string
+    maxLength: 100
+    description: "Country where vendor operates"
+    example: "Deutschland"
+  vendorType:
+    type: string
+    enum:
+      - AUTO_REPAIR
+      - MEDICAL_PROVIDER
+      - CONSTRUCTION_CONTRACTOR
+      - ELECTRICAL_CONTRACTOR
+      - PLUMBING_CONTRACTOR
+      - ROOFING_CONTRACTOR
+      - CLEANING_SERVICE
+      - RESTORATION_SERVICE
+      - LEGAL_SERVICE
+      - TOWING_SERVICE
+      - PARTS_SUPPLIER
+      - OTHER
+    description: "Type/category of services provided by vendor"
+    example: "AUTO_REPAIR"
+  status:
+    type: string
+    enum:
+      - ACTIVE
+      - INACTIVE
+      - SUSPENDED
+      - PENDING_APPROVAL
+    description: "Current operational status of the vendor partnership"
+    example: "ACTIVE"
+  specialization:
+    type: string
+    maxLength: 500
+    description: "Specific areas of expertise or specialization"
+    example: "Collision repair, paint work, bodywork"
+  notes:
+    type: string
+    maxLength: 1000
+    description: "Additional notes about the vendor relationship"
+    example: "Preferred partner for auto claims in Berlin area"
+  createdAt:
+    type: string
+    format: date-time
+    description: "Timestamp when vendor was added to system"
+    readOnly: true
+  updatedAt:
+    type: string
+    format: date-time
+    description: "Timestamp when vendor information was last updated"
+    readOnly: true

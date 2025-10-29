@@ -6,7 +6,7 @@ get:
   description: "Returns a single customer by their unique ID."
   operationId: "getCustomerById"
   parameters:
-    - $ref: '../openapi.yaml#/components/parameters/CustomerId' # Düzeltildi
+    - $ref: '../openapi.yaml#/components/parameters/CustomerId'
   responses:
     '200':
       description: "Successful operation"
@@ -23,7 +23,7 @@ put:
   description: "Updates the information of an existing customer by their ID."
   operationId: "updateCustomer"
   parameters:
-    - $ref: '../openapi.yaml#/components/parameters/CustomerId' # Düzeltildi
+    - $ref: '../openapi.yaml#/components/parameters/CustomerId'
   requestBody:
     description: "The updated customer object."
     required: true
@@ -47,7 +47,7 @@ delete:
   description: "Deletes a customer by their ID."
   operationId: "deleteCustomer"
   parameters:
-    - $ref: '../openapi.yaml#/components/parameters/CustomerId' # Düzeltildi
+    - $ref: '../openapi.yaml#/components/parameters/CustomerId'
   responses:
     '204':
       description: "Customer deleted successfully"

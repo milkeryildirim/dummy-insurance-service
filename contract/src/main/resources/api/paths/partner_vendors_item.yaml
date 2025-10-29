@@ -1,0 +1,72 @@
+get:
+  summary: "Get partner vendor by ID"
+  description: "Retrieve a specific partner vendor by their ID"
+  tags:
+    - "PartnerVendors"
+  parameters:
+    - name: id
+      in: path
+      description: "The unique identifier of the partner vendor"
+      required: true
+      schema:
+        type: integer
+        format: int64
+  responses:
+    '200':
+      description: "Partner vendor found"
+      content:
+        application/json:
+          schema:
+            $ref: '../components/schemas/PartnerVendorDto.yaml'
+    '404':
+      description: "Partner vendor not found"
+
+put:
+  summary: "Update partner vendor"
+  description: "Update an existing partner vendor"
+  tags:
+    - "PartnerVendors"
+  parameters:
+    - name: id
+      in: path
+      description: "The unique identifier of the partner vendor"
+      required: true
+      schema:
+        type: integer
+        format: int64
+  requestBody:
+    required: true
+    content:
+      application/json:
+        schema:
+          $ref: '../components/schemas/PartnerVendorDto.yaml'
+  responses:
+    '200':
+      description: "Partner vendor updated successfully"
+      content:
+        application/json:
+          schema:
+            $ref: '../components/schemas/PartnerVendorDto.yaml'
+    '400':
+      description: "Invalid input"
+    '404':
+      description: "Partner vendor not found"
+
+delete:
+  summary: "Delete partner vendor"
+  description: "Delete a partner vendor from the system"
+  tags:
+    - "PartnerVendors"
+  parameters:
+    - name: id
+      in: path
+      description: "The unique identifier of the partner vendor"
+      required: true
+      schema:
+        type: integer
+        format: int64
+  responses:
+    '204':
+      description: "Partner vendor deleted successfully"
+    '404':
+      description: "Partner vendor not found"

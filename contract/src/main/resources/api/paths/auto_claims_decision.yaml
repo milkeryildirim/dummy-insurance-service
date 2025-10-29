@@ -1,0 +1,66 @@
+get:
+  tags:
+    - AutoClaims
+  summary: "Get the decision for an auto claim"
+  operationId: "getAutoClaimDecision"
+  parameters:
+    - $ref: '../openapi.yaml#/components/parameters/ClaimId'
+  responses:
+    '200':
+      description: "Auto claim decision details"
+      content:
+        application/json:
+          schema:
+            $ref: '../components/schemas/ClaimDecisionDto.yaml'
+    '404':
+      description: "Auto claim or decision not found"
+
+post:
+  tags:
+    - AutoClaims
+  summary: "Create a decision for an auto claim"
+  operationId: "createAutoClaimDecision"
+  parameters:
+    - $ref: '../openapi.yaml#/components/parameters/ClaimId'
+  requestBody:
+    required: true
+    content:
+      application/json:
+        schema:
+          $ref: '../components/schemas/ClaimDecisionDto.yaml'
+  responses:
+    '201':
+      description: "Auto claim decision created successfully"
+      content:
+        application/json:
+          schema:
+            $ref: '../components/schemas/ClaimDecisionDto.yaml'
+    '400':
+      description: "Invalid input data"
+    '404':
+      description: "Auto claim not found"
+    '409':
+      description: "Decision already exists for this auto claim"
+
+put:
+  tags:
+    - AutoClaims
+  summary: "Update the decision for an auto claim"
+  operationId: "updateAutoClaimDecision"
+  parameters:
+    - $ref: '../openapi.yaml#/components/parameters/ClaimId'
+  requestBody:
+    required: true
+    content:
+      application/json:
+        schema:
+          $ref: '../components/schemas/ClaimDecisionDto.yaml'
+  responses:
+    '200':
+      description: "Auto claim decision updated successfully"
+      content:
+        application/json:
+          schema:
+            $ref: '../components/schemas/ClaimDecisionDto.yaml'
+    '404':
+      description: "Auto claim or decision not found"

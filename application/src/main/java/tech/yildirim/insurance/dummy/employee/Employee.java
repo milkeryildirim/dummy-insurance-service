@@ -16,6 +16,7 @@ import lombok.Data;
 import lombok.NoArgsConstructor;
 import org.hibernate.annotations.CreationTimestamp;
 import org.hibernate.annotations.UpdateTimestamp;
+import tech.yildirim.insurance.dummy.policy.PolicyType;
 
 /** Represents an employee of the insurance company. */
 @Entity
@@ -49,13 +50,24 @@ public class Employee {
   @Column(nullable = false)
   private String phoneNumber;
 
-  @NotBlank
-  @Column(nullable = false)
-  private String password;
-
   @Enumerated(EnumType.STRING)
   @Column(nullable = false)
   private EmployeeRole role;
+
+  @Enumerated(EnumType.STRING)
+  @Column(nullable = false)
+  private EmploymentType employmentType = EmploymentType.INTERNAL;
+
+  @Column(length = 100)
+  private String companyName;
+
+  @Enumerated(EnumType.STRING)
+  @Column
+  private PolicyType specializationArea;
+
+  @Enumerated(EnumType.STRING)
+  @Column(nullable = false)
+  private AvailabilityStatus availabilityStatus = AvailabilityStatus.AVAILABLE;
 
   @CreationTimestamp
   @Column(nullable = false, updatable = false)

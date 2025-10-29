@@ -1,0 +1,55 @@
+get:
+  tags:
+    - HealthClaims
+  summary: "Get a specific adjuster report for a health claim"
+  operationId: "getHealthClaimAdjusterReportById"
+  parameters:
+    - $ref: '../openapi.yaml#/components/parameters/ClaimId'
+    - $ref: '../openapi.yaml#/components/parameters/ReportId'
+  responses:
+    '200':
+      description: "Health claim adjuster report details"
+      content:
+        application/json:
+          schema:
+            $ref: '../components/schemas/AdjusterReportDto.yaml'
+    '404':
+      description: "Health claim or adjuster report not found"
+
+put:
+  tags:
+    - HealthClaims
+  summary: "Update an adjuster report for a health claim"
+  operationId: "updateHealthClaimAdjusterReport"
+  parameters:
+    - $ref: '../openapi.yaml#/components/parameters/ClaimId'
+    - $ref: '../openapi.yaml#/components/parameters/ReportId'
+  requestBody:
+    required: true
+    content:
+      application/json:
+        schema:
+          $ref: '../components/schemas/AdjusterReportDto.yaml'
+  responses:
+    '200':
+      description: "Health claim adjuster report updated successfully"
+      content:
+        application/json:
+          schema:
+            $ref: '../components/schemas/AdjusterReportDto.yaml'
+    '404':
+      description: "Health claim or adjuster report not found"
+
+delete:
+  tags:
+    - HealthClaims
+  summary: "Delete an adjuster report for a health claim"
+  operationId: "deleteHealthClaimAdjusterReport"
+  parameters:
+    - $ref: '../openapi.yaml#/components/parameters/ClaimId'
+    - $ref: '../openapi.yaml#/components/parameters/ReportId'
+  responses:
+    '204':
+      description: "Health claim adjuster report deleted successfully"
+    '404':
+      description: "Health claim or adjuster report not found"

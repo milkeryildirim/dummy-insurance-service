@@ -1,0 +1,53 @@
+get:
+  tags:
+    - AutoClaims
+  summary: "Get all customer invoices for an auto claim"
+  operationId: "getAutoClaimCustomerInvoices"
+  parameters:
+    - $ref: '../openapi.yaml#/components/parameters/ClaimId'
+  responses:
+    '200':
+      description: "List of customer invoices for the auto claim"
+      content:
+        application/json:
+          schema:
+            type: array
+            items:
+              $ref: '../components/schemas/CustomerInvoiceDto.yaml'
+    '404':
+      description: "Auto claim not found"
+
+post:
+  tags:
+    - AutoClaims
+  summary: "Upload a new customer invoice for an auto claim"
+  operationId: "createAutoClaimCustomerInvoice"
+  parameters:
+    - $ref: '../openapi.yaml#/components/parameters/ClaimId'
+  requestBody:
+    required: true
+    content:
+      multipart/form-data:
+        schema:
+          type: object
+          properties:
+            invoice:
+              $ref: '../components/schemas/CustomerInvoiceDto.yaml'
+            pdfFile:
+              type: string
+              format: binary
+              description: "PDF file containing the customer invoice"
+          required:
+            - invoice
+            - pdfFile
+  responses:
+    '201':
+      description: "Auto claim customer invoice uploaded successfully"
+      content:
+        application/json:
+          schema:
+            $ref: '../components/schemas/CustomerInvoiceDto.yaml'
+    '400':
+      description: "Invalid input data"
+    '404':
+      description: "Auto claim not found"

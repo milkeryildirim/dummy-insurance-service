@@ -1,0 +1,55 @@
+get:
+  tags:
+    - HomeClaims
+  summary: "Get a specific adjuster report for a home claim"
+  operationId: "getHomeClaimAdjusterReportById"
+  parameters:
+    - $ref: '../openapi.yaml#/components/parameters/ClaimId'
+    - $ref: '../openapi.yaml#/components/parameters/ReportId'
+  responses:
+    '200':
+      description: "Home claim adjuster report details"
+      content:
+        application/json:
+          schema:
+            $ref: '../components/schemas/AdjusterReportDto.yaml'
+    '404':
+      description: "Home claim or adjuster report not found"
+
+put:
+  tags:
+    - HomeClaims
+  summary: "Update an adjuster report for a home claim"
+  operationId: "updateHomeClaimAdjusterReport"
+  parameters:
+    - $ref: '../openapi.yaml#/components/parameters/ClaimId'
+    - $ref: '../openapi.yaml#/components/parameters/ReportId'
+  requestBody:
+    required: true
+    content:
+      application/json:
+        schema:
+          $ref: '../components/schemas/AdjusterReportDto.yaml'
+  responses:
+    '200':
+      description: "Home claim adjuster report updated successfully"
+      content:
+        application/json:
+          schema:
+            $ref: '../components/schemas/AdjusterReportDto.yaml'
+    '404':
+      description: "Home claim or adjuster report not found"
+
+delete:
+  tags:
+    - HomeClaims
+  summary: "Delete an adjuster report for a home claim"
+  operationId: "deleteHomeClaimAdjusterReport"
+  parameters:
+    - $ref: '../openapi.yaml#/components/parameters/ClaimId'
+    - $ref: '../openapi.yaml#/components/parameters/ReportId'
+  responses:
+    '204':
+      description: "Home claim adjuster report deleted successfully"
+    '404':
+      description: "Home claim or adjuster report not found"

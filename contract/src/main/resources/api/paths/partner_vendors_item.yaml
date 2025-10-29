@@ -2,7 +2,7 @@ get:
   summary: "Get partner vendor by ID"
   description: "Retrieve a specific partner vendor by their ID"
   tags:
-    - "Partner Vendors"
+    - "PartnerVendors"
   parameters:
     - name: id
       in: path
@@ -25,7 +25,7 @@ put:
   summary: "Update partner vendor"
   description: "Update an existing partner vendor"
   tags:
-    - "Partner Vendors"
+    - "PartnerVendors"
   parameters:
     - name: id
       in: path
@@ -56,7 +56,7 @@ delete:
   summary: "Delete partner vendor"
   description: "Delete a partner vendor from the system"
   tags:
-    - "Partner Vendors"
+    - "PartnerVendors"
   parameters:
     - name: id
       in: path

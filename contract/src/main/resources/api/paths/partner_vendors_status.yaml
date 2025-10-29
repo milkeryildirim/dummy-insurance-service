@@ -2,7 +2,7 @@ patch:
   summary: "Update partner vendor status"
   description: "Update the status of a partner vendor"
   tags:
-    - "Partner Vendors"
+    - "PartnerVendors"
   parameters:
     - name: id
       in: path

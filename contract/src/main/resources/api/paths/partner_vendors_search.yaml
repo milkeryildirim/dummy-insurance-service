@@ -2,7 +2,7 @@ get:
   summary: "Search partner vendors"
   description: "Search partner vendors by company name or other criteria"
   tags:
-    - "Partner Vendors"
+    - "PartnerVendors"
   parameters:
     - name: companyName
       in: query

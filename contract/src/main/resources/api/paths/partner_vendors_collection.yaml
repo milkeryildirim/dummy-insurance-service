@@ -2,7 +2,7 @@ get:
   summary: "Get all partner vendors"
   description: "Retrieve a list of all partner vendors with optional filtering and pagination"
   tags:
-    - "Partner Vendors"
+    - "PartnerVendors"
   parameters:
     - name: page
       in: query
@@ -83,7 +83,7 @@ post:
   summary: "Create a new partner vendor"
   description: "Create a new partner vendor in the system"
   tags:
-    - "Partner Vendors"
+    - "PartnerVendors"
   requestBody:
     required: true
     content:
